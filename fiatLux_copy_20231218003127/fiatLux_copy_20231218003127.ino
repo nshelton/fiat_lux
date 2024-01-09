@@ -7,6 +7,12 @@
 #include <Adafruit_NeoPixel.h>
 #include <NTPClient.h>
 
+enum State {
+  SHOW_IP = 0,
+  BLANK = 1,
+  TIME = 2,
+  OSC = 3
+};
 
 char ssid[] = "0(+___+)0";     // your network SSID (name)
 char pass[] = "iamthewalrus";  // your network password
@@ -34,8 +40,11 @@ int HEIGHT = 10;
 #define PI 3.1415
 
 #define LED_DATA_PIN 12
+#define BUTTON_PIN 13
 
 String myIP;
+
+State g_state = BLANK;
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(30 * 10, LED_DATA_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -59,7 +68,7 @@ void setup() {
 
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
-  myIP = WiFi.localIP();
+  myIP = WiFi.localIP().toString();
 
   Serial.println(myIP);
 
@@ -78,11 +87,22 @@ void setup() {
   strip.setBrightness(BRIGHTNESS);
   strip.show();
 
+
+  pinMode(BUTTON_PIN, INPUT);
+
+  g_state = SHOW_IP;
 }
 
 
+#define MAX_OSC_ADDR_LENGTH 64
+#define MAX_OSC_MSG_LENGTH 16
 #define OSC_FLOAT_LENGTH 4
-char adresStr[64];
+char adresStr[MAX_OSC_ADDR_LENGTH];
+char oscmsg[MAX_OSC_MSG_LENGTH];
+char oscval[10];
+
+char debugString[100];
+char message[100];
 
 #define BRIGHTNESS_FADER "/1/fader5"
 uint8_t g_brightness = 10;
@@ -97,16 +117,17 @@ bool g_state2 = false;
 bool g_state3 = false;
 bool g_state4 = false;
 
+
 void showMessage(OSCMessage &msg, int addrOffset) {
   msg.getAddress(adresStr);
-  Serial.printf("%s\n", adresStr);
+
   float val = 0;
 
   if (msg.isFloat(0)) {
     val = msg.getFloat(0);
 
     if (strcmp(adresStr, BRIGHTNESS_FADER) == 0) {
-      g_brightness = (uint8_t)(pow(val, 2.0) * 255);
+      g_brightness = (uint8_t)(val * 255);
     }
     if (strcmp(adresStr, MODE_1_TOGGLE) == 0) {
       g_state1 = val == 1.0;
@@ -215,7 +236,7 @@ float palette_a[] = {0.5, 0.5, 0.5};
 float palette_b[] = {0.5, 0.5, 0.5};
 
 float palette_c[] = {1, 1, 1};
-float palette_d[] = {0.0, 0.3, 0.6};
+float palette_d[] = {0.3, 0.3, 0.3};
 float g_time = 0;
 
 uint32_t getColor(float t) {
@@ -245,7 +266,7 @@ void displayGradient() {
 }
 // char timeString[8];
 
-void displayTime(uint32_t col) {
+void displayTime() {
   // int sec = timeClient.getSeconds();
   // int hr = timeClient.getHours();
   // int min = timeClient.getMinutes();
@@ -254,22 +275,14 @@ void displayTime(uint32_t col) {
   String timeString = timeClient.getFormattedTime();
   // Serial.println(timeString);
 
-  int x = 2;
+  int x = 0;
   int y = 0;
 
   for (size_t i = 0; i < 8; i++) {
     if (timeString[i] > '9') {
       x -= 1;
     }
-    if (col == 1) {
-      float t = (float)x / WIDTH + g_time;
-      float tx = t + 0.1 * (random(100) / 50.0) / WIDTH;
-      putChar(timeString[i] - '0', x, y, 2,  getColor(tx));
-    }
-    else
-    {
-      putChar(timeString[i] - '0', x, y, 2, col);
-    }
+    putChar(timeString[i] - '0', x, y, 2, packColor(255, 200, 100));
     if (timeString[i] > '9') {
       x += 3;
     } else {
@@ -304,17 +317,12 @@ void loop() {
   }
 
   if (g_state3) {
-    displayTime(0);
-  }
-
-  if (g_state4) {
-    displayTime(1);
+    displayTime();
   }
 
   show();
   delay(50);
   readOSC();
-  g_time += 0.01;
 
   strip.setBrightness(g_brightness);
 }
