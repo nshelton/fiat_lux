@@ -1,0 +1,6 @@
+{
+    "board": "arduino:samd:nano_33_iot",
+    "port": "/dev/tty.wlan-debug",
+    "programmer": "sam_ice",
+    "sketch": "fiat_lux_2.ino"
+}

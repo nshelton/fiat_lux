@@ -8,9 +8,9 @@ arduino::IPAddress myIP;
 
 
 void connectWifi(char* ssid, char* pass) {
+  Serial.print("Attempting to connect to network: ");
   // attempt to connect to Wi-Fi network:
   while (status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to network: ");
     Serial.println(ssid);
     // Connect to WPA/WPA2 network:
     status = WiFi.begin(ssid, pass);
@@ -25,11 +25,11 @@ void connectWifi(char* ssid, char* pass) {
 }
 
 void getWifiStatus() {
- unsigned long currentMillisInfo = millis();
+//  unsigned long currentMillisInfo = millis();
 
   // check if the time after the last update is bigger the interval
-  if (currentMillisInfo - previousMillisInfo >= intervalInfo) {
-    previousMillisInfo = currentMillisInfo;
+  // if (currentMillisInfo - previousMillisInfo >= intervalInfo) {
+    // previousMillisInfo = currentMillisInfo;
 
     Serial.println("Board Information:");
     //i print your board's IP address:
@@ -64,7 +64,7 @@ void getWifiStatus() {
     Serial.println(rssi);
     Serial.println(myIP);
     Serial.println("---------------------------------------");
-  }
+  // }
 
 
 }

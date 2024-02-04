@@ -5,9 +5,9 @@ WiFiUDP ntpUDP;
 
 // NTPClient timeClient(ntpUDP, "time.nist.gov", -8 * 60 * 60);  // -7 hours offset
 
-// IPAddress timeServer(132, 163, 97, 1); // time-a-wwv.nist.gov
+IPAddress timeServer(132, 163, 97, 1); // time-a-wwv.nist.gov
 // IPAddress timeServer(132, 163, 4, 102); // time-b.timefreq.bldrdoc.gov
-IPAddress timeServer(132, 163, 4, 103); // time-c.timefreq.bldrdoc.gov
+// IPAddress timeServer(132, 163, 4, 103); // time-c.timefreq.bldrdoc.gov
 
 
 // const int timeZone = 1;     // Central European Time
@@ -23,6 +23,7 @@ void setupTime(){
   ntpUDP.begin(localPort);
   Serial.println("waiting for sync");
   setSyncProvider(getNtpTime);
+  setSyncInterval(1);
 }
 
 unsigned long epoch() {
@@ -39,9 +40,11 @@ void digitalClockDisplay(){
   printDigits(minute());
   printDigits(second());
   Serial.print(" ");
+  Serial.print(dayShortStr(weekday()));
+  Serial.print(" ");
   Serial.print(day());
   Serial.print(" ");
-  Serial.print(month());
+  Serial.print(monthShortStr(month()));
   Serial.print(" ");
   Serial.print(year()); 
   Serial.println(); 
@@ -55,16 +58,54 @@ void printDigits(int digits){
   Serial.print(digits);
 }
 
+// buffer needs to be hhmmsswwwddmmm
+// for 123456monjan02
+void getDateTimeString(char * buffer) {
+  uint8_t hr = hour();
 
-time_t prevDisplay = 0; // when the digital clock was displayed
-void updateTime() {
+  if (hr > 12) {hr-=12;}
 
-   if (timeStatus() != timeNotSet) {
-    if (now() != prevDisplay) { //update the display only if time has changed
-      prevDisplay = now();
-      digitalClockDisplay();  
-    }
+  if (hr == 0){
+      sprintf (buffer, "12");
+  } else if (hr < 10) {
+      sprintf (buffer, "0%d", hr);
+  } else {
+      sprintf (buffer, "%d", hr);
+  } 
+
+  uint16_t min = minute();
+  if (min < 10) {
+      sprintf (buffer + 2, "0%d", min);
+  } else {
+      sprintf (buffer + 2, "%d", min);
   }
+
+  uint16_t sec = second();
+  if (sec < 10) {
+      sprintf (buffer + 4, "0%d", sec);
+  } else {
+      sprintf (buffer + 4, "%d", sec);
+  }
+
+  sprintf (buffer + 6, dayShortStr(weekday()));
+    if (day() < 10) {
+      sprintf (buffer + 9, "0%d", day());
+  } else {
+      sprintf (buffer + 9, "%d", day());
+  }
+
+  sprintf (buffer + 11, monthShortStr(month()));
+}
+
+
+time_t lastUpdate = 0; // when the digital clock was displayed
+void updateTime() {
+  // Serial.print(".");
+  // time_t current = now();
+  // if (current - lastUpdate > 1){
+  //   digitalClockDisplay();  
+  //   lastUpdate = current;
+  // }
 }
 /*-------- NTP code ----------*/
 

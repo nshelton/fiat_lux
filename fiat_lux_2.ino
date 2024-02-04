@@ -7,19 +7,19 @@ void setup() {
   // while (!Serial);
   // blocks until connection
   connectWifi(sec_ssid, sec_pass);
-  setupLED();
-  setupOSCRoute();
-  // pinMode(LED_BUILTIN, OUTPUT);
   getWifiStatus();
-  // setupTime();
+  setupLED();
+  // delay(4000);
+
+  setupOSCRoute();
+  setupTime();
 }
 
 void loop() {
-
-  updateLED();
   readOSC();
+  updateLED();
   // updateTime();
   // getWifiStatus();
-  delay(10);
+  delay(33);
 
 }
