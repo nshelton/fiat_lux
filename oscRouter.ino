@@ -34,6 +34,8 @@ bool g_state2 = false;
 bool g_state3 = false;
 bool g_state4 = false;
 
+
+
 // enum State {
 //   SHOW_IP = 0,
 //   BLANK = 1,
@@ -56,6 +58,23 @@ void onOSCMessage(OSCMessage &msg, int addrOffset) {
       g_brightness = (uint8_t)(val * 255);
       setLEDBrightness(g_brightness);
     }
+
+    if (strcmp(address_buf, "/1/fader1") == 0) {
+      g_fader_1 = (uint8_t)(val * 255);
+    }
+
+    if (strcmp(address_buf, "/1/fader2") == 0) {
+      g_fader_2 = (uint8_t)(val * 255);
+    }
+
+    if (strcmp(address_buf, "/1/fader3") == 0) {
+      g_fader_3 = (uint8_t)(val * 255);
+    }
+
+    if (strcmp(address_buf, "/1/fader4") == 0) {
+      g_fader_4 = (uint8_t)(val * 255);
+    }
+
     if (strcmp(address_buf, MODE_1_TOGGLE) == 0) {
       g_state1 = val == 1.0;
     }

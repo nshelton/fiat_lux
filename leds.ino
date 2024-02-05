@@ -141,7 +141,7 @@ void updateLED() {
   }
 
   uint32_t hue = 64 * 512 + g_time + 8 * 512;
-  uint16_t spread = 19000;
+  uint16_t spread = g_fader_1 * 1000;
   writeString(timebuffer+0, 2, 0, 5,  strip.ColorHSV(hue, 255, 255), 2);
   writeString(timebuffer+2, 2, 14, 5, strip.ColorHSV(hue + spread * 1, 255, 255), 2);
   // writeString(":", 1, 13, 5,          strip.ColorHSV(hue, 255, 255), 2);
