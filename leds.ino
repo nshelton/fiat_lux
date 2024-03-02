@@ -1,5 +1,11 @@
 
-#include <Adafruit_NeoPixel.h>
+// #include <Adafruit_NeoPixel.h>
+
+
+// #include "FastLED.h"
+// FASTLED_USING_NAMESPACE
+// using namespace FastLED
+
 #include <chrono>
 #include <iostream>
 
@@ -10,14 +16,12 @@
 
 #define CHARWIDTH 4
 
-Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_RGB + NEO_KHZ800);
-
 uint32_t g_time = 0;
 uint8_t g_ledBrightness = 200;
 
-uint32_t leds[NUM_LEDS];
+CRGB leds[NUM_LEDS];
 
-void setPixel(int x, int y, uint32_t col) {
+void setPixel(int x, int y, CRGB col) {
 
   if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) {
     return;
@@ -40,16 +44,11 @@ void setPixel(int x, int y, uint32_t col) {
   }
 }
 
-void clear(uint32_t color = 0) {
+void clear(CRGB color = CRGB::BlanchedAlmond) {
   for (int i = 0; i < NUM_LEDS; i++) { leds[i] = color; }
 }
 
-void show() {
-  for (int i = 0; i < NUM_LEDS; i++) { strip.setPixelColor(i, leds[i]); }
-  strip.show();
-}
-
-void putChar(char n, uint32_t x, uint32_t y, uint8_t scale = 1, uint32_t col = 0xffffff) {
+void putChar(char n, uint32_t x, uint32_t y, uint8_t scale = 1, CRGB col = CRGB::Wheat) {
   uint32_t C = 0b000010000;
 
   if (auto search = charmap33.find(n); search != charmap33.end())
@@ -70,23 +69,10 @@ void putChar(char n, uint32_t x, uint32_t y, uint8_t scale = 1, uint32_t col = 0
   }
 }
 
-void writeString(char* str, uint32_t len, int x, int y, uint32_t color, int scale = 1) {
+void writeString(char* str, uint32_t len, int x, int y, CRGB color, int scale = 1) {
   for (uint32_t i = 0; i < len; i++) {
     putChar(str[i], i * CHARWIDTH * scale + x - (scale-1) * i, y, scale, color);
   }
-}
-
-void bootSequence(uint32_t time) {
-  // clear( strip.Color(128,128,128));
-  clear();
-  float progress = WIDTH * (float)time / 100.0;
-
-  for (int y = 0; y < HEIGHT; y++) {
-    for (int x = 0; x < progress; x++) {
-      setPixel(x, y, strip.Color(128, 255, 128));
-    }
-  }
-  show();  // Update strip with new contents
 }
 
 char timebuffer[14];
@@ -111,7 +97,7 @@ void updateLED() {
     next_ca();
     for (int y = 0; y < HEIGHT; y++) {
       for (int x = 0; x < WIDTH; x++) {
-        uint32_t col = strip.ColorHSV(x * 512 + g_time + y * 512, 255, 30);
+        CRGB col = CHSV(x * 512 + g_time + y * 512, 255, 30);
         if (get_ca(x, y) > 0) {
           setPixel(x, y, col);
         }
@@ -122,7 +108,7 @@ void updateLED() {
   if (DO_BACKGROUND) {
     for (int y = 0; y < HEIGHT; y++) {
       for (int x = 0; x < WIDTH; x++) {
-        uint32_t col = strip.ColorHSV(x * 512 + g_time + y * 512, 255, 255);
+        CRGB col = CHSV(x * 512 + g_time + y * 512, 255, 255);
         setPixel(x, y, col);
       }
     }
@@ -140,37 +126,65 @@ void updateLED() {
     last_time_printed = g_time;
   }
 
-  uint32_t hue = 64 * 512 + g_time + 8 * 512;
-  uint16_t spread = g_fader_1 * 1000;
-  writeString(timebuffer+0, 2, 0, 5,  strip.ColorHSV(hue, 255, 255), 2);
-  writeString(timebuffer+2, 2, 14, 5, strip.ColorHSV(hue + spread * 1, 255, 255), 2);
-  // writeString(":", 1, 13, 5,          strip.ColorHSV(hue, 255, 255), 2);
-  writeString(timebuffer+4, 1, 28, 8, strip.ColorHSV(hue + spread * 2, 255, 255), 1);
-  writeString(timebuffer+5, 1, 28, 4, strip.ColorHSV(hue + spread * 2, 255, 255), 1);
+  uint32_t hue = g_time ;
+  uint16_t spread = g_fader_1 * 10;
+  writeString(timebuffer+0, 2, 0, 5,  CHSV(hue, 255, 255), 2);
+  writeString(timebuffer+2, 2, 14, 5, CHSV(hue + spread * 1, 255, 255), 2);
+  // writeString(":", 1, 13, 5,          CHSV(hue, 255, 255), 2);
+  writeString(timebuffer+4, 1, 28, 8, CHSV(hue + spread * 2, 255, 255), 1);
+  writeString(timebuffer+5, 1, 28, 4, CHSV(hue + spread * 2, 255, 255), 1);
 
-  writeString(timebuffer+6, 3, 0, 12,   strip.ColorHSV(hue , 255, 255), 1);
-  writeString(timebuffer+9, 2, 12, 12,  strip.ColorHSV(hue+spread , 255, 255), 1);
-  writeString(timebuffer+11, 3, 20, 12, strip.ColorHSV(hue+spread * 2 , 255, 255), 1);
+  writeString(timebuffer+6, 3, 0, 12,   CHSV(hue , 255, 255), 1);
+  writeString(timebuffer+9, 2, 12, 12,  CHSV(hue+spread , 255, 255), 1);
+  writeString(timebuffer+11, 3, 20, 12, CHSV(hue+spread * 2 , 255, 255), 1);
 
   // writeString(timeString,  0, 4, strip.Color(0, 255, 0), 2);
   // writeString("34",  16, 0, strip.Color(0, 255, 128), 2);
   // writeString("asdfghjk",  0, 8, strip.Color(0, 0, 255));
   // writeString("12345678", 8, 0, 12, strip.Color(128, 255, 0));
+  // send the 'leds' array out to the actual LED strip
+  // insert a delay to keep the framerate modest
+  // FastLED.delay(100); 
 
-  show();  
+  FastLED.show();  
 }
 
 
 void setLEDBrightness(uint8_t val) {
   g_ledBrightness = val;
-  strip.setBrightness(g_ledBrightness);
+  // strip.setBrightness(g_ledBrightness);
 }
+
+#define LED_TYPE    WS2812
+#define COLOR_ORDER GRB 
+
+void ledBootScreen() {
+
+    for (uint8_t y = 0; y < HEIGHT; y++) {
+      for (uint8_t x = 0; x < WIDTH; x++) {
+        CRGB col = CHSV(x, y, 64);
+        setPixel(x, y, col);
+      }
+    }
+
+  writeString("connect", 8, 1, 8, CHSV(0, 255, 255), 1);
+  FastLED.show();  
+}
+
+
 
 void setupLED() {
 
-  strip.begin();
-  strip.show();
-  strip.setBrightness(g_ledBrightness);
+  // tell FastLED about the LED strip configuration
+  FastLED.addLeds<LED_TYPE,LED_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  //FastLED.addLeds<LED_TYPE,DATA_PIN,CLK_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+
+  FastLED.setBrightness(255);
+
+  ledBootScreen();
+  // strip.begin();
+  // strip.show();
+  // strip.setBrightness(g_ledBrightness);
   init_ca();
   g_time = 0;
 }
