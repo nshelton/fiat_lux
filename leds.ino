@@ -21,6 +21,9 @@ uint8_t g_ledBrightness = 200;
 
 CRGB leds[NUM_LEDS];
 
+#define PALETTE_SIZE 8
+CRGB g_current_palette[PALETTE_SIZE];
+
 void setPixel(int x, int y, CRGB col) {
 
   if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) {
@@ -34,13 +37,15 @@ void setPixel(int x, int y, CRGB col) {
     idx = y * 16 + x;
     if (odd_row) { x = 15 - x; }
     idx = y * 16 + x;
-    leds[idx] = col;
+    // leds[idx] = col / (255 / g_ledBrightness);
+    leds[idx] = col ;
 
   } else if (x >= 16) {
     x -= 16;
     if (odd_row) { x = 15 - x; }
     idx = y * 16 + x + 256;
-    leds[idx] = col;
+    // leds[idx] = col / (255 / g_ledBrightness);
+    leds[idx] = col ;
   }
 }
 
@@ -80,7 +85,8 @@ char timebuffer[14];
 uint32_t last_time_printed = 0;
 
 void updateLED() {
-  g_time += 10;
+  g_time += 1;
+  updatePalette(g_time);
 
   bool DO_CA = false;
   bool DO_BACKGROUND = false;
@@ -89,9 +95,7 @@ void updateLED() {
     bool DO_CA = true;
   }
 
-  // clear(strip.Color(10, 10, 10));
   clear(0);
-  
 
   if (DO_CA) {
     next_ca();
@@ -126,37 +130,36 @@ void updateLED() {
     last_time_printed = g_time;
   }
 
-  uint32_t hue = g_time ;
-  uint16_t spread = g_fader_1 * 10;
-  writeString(timebuffer+0, 2, 0, 5,  CHSV(hue, 255, 255), 2);
-  writeString(timebuffer+2, 2, 14, 5, CHSV(hue + spread * 1, 255, 255), 2);
-  // writeString(":", 1, 13, 5,          CHSV(hue, 255, 255), 2);
-  writeString(timebuffer+4, 1, 28, 8, CHSV(hue + spread * 2, 255, 255), 1);
-  writeString(timebuffer+5, 1, 28, 4, CHSV(hue + spread * 2, 255, 255), 1);
 
-  writeString(timebuffer+6, 3, 0, 12,   CHSV(hue , 255, 255), 1);
-  writeString(timebuffer+9, 2, 12, 12,  CHSV(hue+spread , 255, 255), 1);
-  writeString(timebuffer+11, 3, 20, 12, CHSV(hue+spread * 2 , 255, 255), 1);
+  writeString(timebuffer+0, 2, 0, 5,  g_current_palette[1], 2);
+  writeString(timebuffer+2, 2, 14, 5, g_current_palette[2], 2);
+  // writeString(":", 1, 13, 5,          CHSV(hue, 255, 255), 2);
+  writeString(timebuffer+4, 1, 28, 8, g_current_palette[3], 1);
+  writeString(timebuffer+5, 1, 28, 4, g_current_palette[3], 1);
+
+  writeString(timebuffer+6, 3, 0, 12,   g_current_palette[1], 1);
+  writeString(timebuffer+9, 2, 12, 12,  g_current_palette[2], 1);
+  writeString(timebuffer+11, 3, 20, 12, g_current_palette[3], 1);
 
   // writeString(timeString,  0, 4, strip.Color(0, 255, 0), 2);
   // writeString("34",  16, 0, strip.Color(0, 255, 128), 2);
   // writeString("asdfghjk",  0, 8, strip.Color(0, 0, 255));
   // writeString("12345678", 8, 0, 12, strip.Color(128, 255, 0));
-  // send the 'leds' array out to the actual LED strip
-  // insert a delay to keep the framerate modest
-  // FastLED.delay(100); 
 
   FastLED.show();  
 }
 
-
 void setLEDBrightness(uint8_t val) {
   g_ledBrightness = val;
-  // strip.setBrightness(g_ledBrightness);
+  FastLED.setBrightness(g_ledBrightness);
 }
 
-#define LED_TYPE    WS2812
-#define COLOR_ORDER GRB 
+
+void updatePalette(int t) {
+    for (int i = 0; i < PALETTE_SIZE; i++) {
+    g_current_palette[i] = CHSV(i * 32 + t / 32, 200, 200);
+  }
+}
 
 void ledBootScreen() {
 
@@ -169,8 +172,12 @@ void ledBootScreen() {
 
   writeString("connect", 8, 1, 8, CHSV(0, 255, 255), 1);
   FastLED.show();  
+
 }
 
+
+#define LED_TYPE    WS2812
+#define COLOR_ORDER GRB
 
 
 void setupLED() {
@@ -179,12 +186,15 @@ void setupLED() {
   FastLED.addLeds<LED_TYPE,LED_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   //FastLED.addLeds<LED_TYPE,DATA_PIN,CLK_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
 
-  FastLED.setBrightness(255);
+  FastLED.setBrightness(250);
 
   ledBootScreen();
   // strip.begin();
   // strip.show();
   // strip.setBrightness(g_ledBrightness);
+
+  updatePalette(g_time);
+
   init_ca();
   g_time = 0;
 }

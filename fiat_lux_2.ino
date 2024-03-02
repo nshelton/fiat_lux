@@ -30,6 +30,6 @@ void loop() {
   updateLED();
   // updateTime();
   // getWifiStatus();
-  delay(33);
+  delay(10);
 
 }

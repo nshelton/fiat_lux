@@ -15,8 +15,8 @@ void connectWifi(char* ssid, char* pass) {
     // Connect to WPA/WPA2 network:
     status = WiFi.begin(ssid, pass);
 
-    // wait 1 seconds for connection:
-    delay(1000);
+    // wait 10ms  for connection:
+    delay(10);
   }
 
   // you're connected now, so print out the data:

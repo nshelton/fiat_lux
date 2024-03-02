@@ -23,7 +23,7 @@ void setupTime(){
   ntpUDP.begin(localPort);
   Serial.println("waiting for sync");
   setSyncProvider(getNtpTime);
-  setSyncInterval(1);
+  setSyncInterval(120);
 }
 
 unsigned long epoch() {

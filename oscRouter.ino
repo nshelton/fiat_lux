@@ -34,15 +34,12 @@ bool g_state2 = false;
 bool g_state3 = false;
 bool g_state4 = false;
 
-
-
 // enum State {
 //   SHOW_IP = 0,
 //   BLANK = 1,
 //   TIME = 2,
 //   OSC = 3
 // };
-
 // State g_state = BLANK;
 
 void onOSCMessage(OSCMessage &msg, int addrOffset) {
@@ -95,9 +92,11 @@ void readOSC() {
   int size;
   if ((size = Udp.parsePacket()) > 0) {
     byte udpData[size];
+    Serial.println(size);
     for (int i = 0; i < size; i++) udpData[i] = Udp.read();
     // if data begins with / it is a message
     if (udpData[0] == 47) {
+      
       msgIN.fill(udpData, size);
       if (!msgIN.hasError()) {
         msgIN.route("/*", onOSCMessage);
