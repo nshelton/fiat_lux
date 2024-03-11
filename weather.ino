@@ -55,7 +55,7 @@ void updateWeather() {
   HttpClient http(c);
 
   int err =0;
-  err = http.get("api.weatherapi.com", "/v1/current.json?key=b0283b47668143a7bb630558241103&q=los%20angeles&aqi=yes");
+  err = http.get("api.weatherapi.com", weather_api_url);
   if (err == 0)
   { 
     err = http.responseStatusCode();

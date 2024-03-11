@@ -72,7 +72,7 @@ void putChar(char n, uint32_t x, uint32_t y, uint8_t scale, CRGB col = CRGB::Whe
 
     for (int dy = 0; dy < 7; dy++) {
       for (int dx = 5; dx >= 1; dx--) {
-        if (C & 1) 
+        if (C & 1)
           setPixel(x + dx, y + dy, col);
         C >>= 1;
       }
@@ -81,13 +81,13 @@ void putChar(char n, uint32_t x, uint32_t y, uint8_t scale, CRGB col = CRGB::Whe
 }
 
 CRGB getColorFromTemp(int temp) {
-  if (temp < 0) {  return CRGB(0,0,10); }
-  if (temp < 50) {  return CRGB(0,0,255); }
-  if (temp < 60) {  return CRGB(82,170,180); } 
-  if (temp < 70) {  return CRGB(100,150,91); }
-  if (temp < 80) {  return CRGB(237,237,234); }
-  if (temp < 90) {  return CRGB(252,208,89); } 
-   return CRGB(222,88,66);
+  if (temp < 0) { return CRGB(0, 0, 10); }
+  if (temp < 50) { return CRGB(0, 0, 255); }
+  if (temp < 60) { return CRGB(82, 170, 180); }
+  if (temp < 70) { return CRGB(100, 150, 91); }
+  if (temp < 80) { return CRGB(237, 237, 234); }
+  if (temp < 90) { return CRGB(252, 208, 89); }
+  return CRGB(222, 88, 66);
 }
 
 void writeString(char* str, uint32_t len, int x, int y, CRGB color, int scale = 1) {
@@ -153,7 +153,7 @@ void updateLED() {
   writeString(timebuffer + 0, 2, 0, 4, g_current_palette[1], 2);
   writeString(timebuffer + 2, 2, 14, 4, g_current_palette[3], 2);
   writeString(":", 1, 10, 4, g_current_palette[2], 2);
- 
+
   writeString(timebuffer + 4, 1, 28, 8, g_current_palette[4], 1);
   writeString(timebuffer + 5, 1, 28, 4, g_current_palette[4], 1);
 
@@ -161,22 +161,28 @@ void updateLED() {
   writeString(timebuffer + 9, 2, 12, 12, g_current_palette[2], 1);
   writeString(timebuffer + 11, 3, 20, 12, g_current_palette[3], 1);
 
-  sprintf (timebuffer, "%d^", g_local_temperature);
+  sprintf(timebuffer, "%d^", g_local_temperature);
   writeString(timebuffer, 3, 0, 0, getColorFromTemp(g_local_temperature), 1);
 
-  sprintf (timebuffer, "%dx", g_local_humidity);
+  sprintf(timebuffer, "%dx", g_local_humidity);
   writeString(timebuffer, 3, 12, 0, g_current_palette[0], 1);
 
   // writeString(timeString,  0, 4, strip.Color(0, 255, 0), 2);
   // writeString("34",  16, 0, strip.Color(0, 255, 128), 2);
   // writeString("asdfghjk",  0, 8, strip.Color(0, 0, 255));
   // writeString("12345678", 8, 0, 12, strip.Color(128, 255, 0));
+  setPixel(0, 0, CRGB(255, 255, 255));
+  setPixel(WIDTH, 0, CRGB(255, 255, 255));
+  setPixel(0, HEIGHT, CRGB(255, 255, 255));
+  setPixel(WIDTH, HEIGHT, CRGB(255, 255, 255));
 
   FastLED.show();
 }
 
 void setLEDBrightness(uint8_t val) {
   g_ledBrightness = val;
+  Serial.print("brightness set to ");
+  Serial.println(g_ledBrightness);
   // FastLED.setBrightness(g_ledBrightness);
 }
 
@@ -187,8 +193,8 @@ void updatePalette(int t) {
 }
 
 void ledBootScreen() {
-  for (uint8_t y = 0; y < HEIGHT; y++) {
-    for (uint8_t x = 0; x < WIDTH; x++) {
+  for (uint8_t y = 0; y < HEIGHT - 1; y++) {
+    for (uint8_t x = 0; x < WIDTH - 1; x++) {
       CRGB col = CHSV(x, y, 64);
       setPixel(x, y, col);
     }

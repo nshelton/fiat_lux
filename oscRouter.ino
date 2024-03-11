@@ -54,7 +54,7 @@ void onOSCMessage(OSCMessage &msg, int addrOffset) {
     // Serial.println(val);
 
     if (strcmp(address_buf, BRIGHTNESS_FADER) == 0) {
-      setLEDBrightness(g_brightness);
+      setLEDBrightness(val * 255);
     }
 
     if (strcmp(address_buf, "/1/fader1") == 0) {
