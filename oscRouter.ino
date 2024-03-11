@@ -43,16 +43,17 @@ bool g_state4 = false;
 // State g_state = BLANK;
 
 void onOSCMessage(OSCMessage &msg, int addrOffset) {
+
   msg.getAddress(address_buf);
+  int usused = addrOffset;
 
   if (msg.isFloat(0)) {
     float val = msg.getFloat(0);
-    Serial.print(address_buf);
-    Serial.print(" ");
-    Serial.println(val);
+    // Serial.print(address_buf);
+    // Serial.print(" ");
+    // Serial.println(val);
 
     if (strcmp(address_buf, BRIGHTNESS_FADER) == 0) {
-      g_brightness = (uint8_t)(val * 255);
       setLEDBrightness(g_brightness);
     }
 
@@ -85,14 +86,21 @@ void onOSCMessage(OSCMessage &msg, int addrOffset) {
       g_state4 = val == 1.0;
     }
   }
+
+
 }
 
 void readOSC() {
+
+  // while (network_mutex) { delay(1); }
+
+  network_mutex = true;
+
   OSCMessage msgIN;
   int size;
   if ((size = Udp.parsePacket()) > 0) {
     byte udpData[size];
-    Serial.println(size);
+    // Serial.println(size);
     for (int i = 0; i < size; i++) udpData[i] = Udp.read();
     // if data begins with / it is a message
     if (udpData[0] == 47) {
@@ -103,6 +111,8 @@ void readOSC() {
       }
     }
   }
+
+  network_mutex = false;
 }
 
 void setupOSCRoute() {

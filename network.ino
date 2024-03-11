@@ -6,7 +6,6 @@ const int intervalInfo = 5000;            // interval at which to update the boa
 
 arduino::IPAddress myIP;
 
-
 void connectWifi(char* ssid, char* pass) {
   Serial.print("Attempting to connect to network: ");
   // attempt to connect to Wi-Fi network:
@@ -14,7 +13,6 @@ void connectWifi(char* ssid, char* pass) {
     Serial.println(ssid);
     // Connect to WPA/WPA2 network:
     status = WiFi.begin(ssid, pass);
-
     // wait 10ms  for connection:
     delay(10);
   }
@@ -64,7 +62,6 @@ void getWifiStatus() {
     Serial.println(rssi);
     Serial.println(myIP);
     Serial.println("---------------------------------------");
-  // }
 
 
 }

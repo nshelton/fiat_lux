@@ -3,12 +3,15 @@
 #include "secrets.h"
 #include <OSCMessage.h>
 
-
 uint8_t g_fader_1 = 128;
 uint8_t g_fader_2 = 128;
 uint8_t g_fader_3 = 128;
 uint8_t g_fader_4 = 128;
 
+int g_local_temperature = -1;
+int g_local_humidity = -1;
+
+bool network_mutex = false;
 
 void setup() {
   Serial.begin(19200);
@@ -30,6 +33,7 @@ void loop() {
   updateLED();
   // updateTime();
   // getWifiStatus();
+  updateWeather();
   delay(10);
 
 }

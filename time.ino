@@ -13,7 +13,7 @@ IPAddress timeServer(132, 163, 97, 1); // time-a-wwv.nist.gov
 // const int timeZone = 1;     // Central European Time
 // const int timeZone = -5;  // Eastern Standard Time (USA)
 // const int timeZone = -4;  // Eastern Daylight Time (USA)
-const int timeZone = -8;  // Pacific Standard Time (USA)
+const int timeZone = -7;  // Pacific Standard Time (USA)
 //const int timeZone = -7;  // Pacific Daylight Time (USA)
 unsigned int localPort = 1023;  // local port to listen for UDP packets
 
@@ -114,6 +114,10 @@ byte packetBuffer[NTP_PACKET_SIZE]; //buffer to hold incoming & outgoing packets
 
 time_t getNtpTime()
 {
+  // while(network_mutex) {delay(1);}
+
+  network_mutex = true;
+
   while (ntpUDP.parsePacket() > 0) ; // discard any previously received packets
   Serial.println("Transmit NTP Request");
   sendNTPpacket(timeServer);
@@ -132,6 +136,9 @@ time_t getNtpTime()
       return secsSince1900 - 2208988800UL + timeZone * SECS_PER_HOUR;
     }
   }
+
+  network_mutex = false;
+
   Serial.println("No NTP Response :-(");
   return 0; // return 0 if unable to get the time
 }
