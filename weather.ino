@@ -10,7 +10,7 @@ DynamicJsonDocument weather_json(2048);
 
 uint32_t last_weather_time = 0;
 
-const int k_weatherUpdateTime = 1000 * 30; // 30s 
+const int k_weatherUpdateTime = 1000 * 60; // 1minute 
 
 void parseWeather() {
 

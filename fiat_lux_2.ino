@@ -11,6 +11,10 @@ uint8_t g_fader_4 = 128;
 int g_local_temperature = -1;
 int g_local_humidity = -1;
 
+int g_sensor_temperature = -1;
+int g_sensor_humidity = -1;
+
+
 bool network_mutex = false;
 
 void setup() {
@@ -26,6 +30,7 @@ void setup() {
 
   setupOSCRoute();
   setupTime();
+  init_sensors();
 }
 
 void loop() {
@@ -35,5 +40,8 @@ void loop() {
   // getWifiStatus();
   updateWeather();
   delay(10);
+
+  update_sensors();
+
 
 }

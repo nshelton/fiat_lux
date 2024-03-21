@@ -161,12 +161,15 @@ void updateLED() {
   writeString(timebuffer + 9, 2, 12, 12, g_current_palette[2], 1);
   writeString(timebuffer + 11, 3, 20, 12, g_current_palette[3], 1);
 
-  sprintf(timebuffer, "%d^", g_local_temperature);
+  sprintf(timebuffer, "%d", g_local_temperature);
   writeString(timebuffer, 3, 0, 0, getColorFromTemp(g_local_temperature), 1);
+  sprintf(timebuffer, "%d", g_local_humidity);
+  writeString(timebuffer, 3, 8, 0, g_current_palette[0], 1);
 
-  sprintf(timebuffer, "%dx", g_local_humidity);
-  writeString(timebuffer, 3, 12, 0, g_current_palette[0], 1);
-
+  sprintf(timebuffer, "%d", g_sensor_temperature);
+  writeString(timebuffer, 3, 16, 0, getColorFromTemp(g_sensor_temperature), 1);
+  sprintf(timebuffer, "%d", g_sensor_humidity);
+  writeString(timebuffer, 3, 24, 0, g_current_palette[0], 1);
   // writeString(timeString,  0, 4, strip.Color(0, 255, 0), 2);
   // writeString("34",  16, 0, strip.Color(0, 255, 128), 2);
   // writeString("asdfghjk",  0, 8, strip.Color(0, 0, 255));
