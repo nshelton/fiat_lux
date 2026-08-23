@@ -1,2 +1,6 @@
 secrets.h
-
+.cache/
+.pio/
+.vscode/
+.DS_Store
+compile_commands.json

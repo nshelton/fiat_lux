@@ -1,4 +1,0 @@
-struct {
-  String top;
-
-} state;
