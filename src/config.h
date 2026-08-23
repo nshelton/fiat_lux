@@ -9,8 +9,10 @@
 #define LED_TYPE     WS2812
 #define COLOR_ORDER  GRB
 
-// 5V 4A supply -- never raise this cap
+// 5V 4A supply -- never raise this cap (usb_safe env overrides it down to 300)
+#ifndef MAX_POWER_MA
 #define MAX_POWER_MA 3500
+#endif
 
 #define FRAME_MS     33
 

@@ -13,9 +13,15 @@ static Animation* const anims[] = {anim_clock, anim_ca, anim_plasma, anim_test};
 
 void setup() {
   Serial.begin(115200);
+  uint32_t t0 = millis();
+  while (!Serial && millis() - t0 < 3000) {}
+  Serial.println("boot");
   matrixSetup();
+  Serial.println("matrix ok");
   netSetup();
+  Serial.println("net ok");
   sensorSetup();
+  Serial.println("sensor ok");
 }
 
 void loop() {

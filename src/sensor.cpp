@@ -6,7 +6,19 @@
 static Adafruit_AHTX0 aht;
 static bool present = false;
 
+// a floating I2C bus hangs SAMD Wire forever; a live sensor board
+// holds both lines high through its pullups
+static bool i2cAlive() {
+  pinMode(PIN_WIRE_SDA, INPUT);
+  pinMode(PIN_WIRE_SCL, INPUT);
+  return digitalRead(PIN_WIRE_SDA) && digitalRead(PIN_WIRE_SCL);
+}
+
 void sensorSetup() {
+  if (!i2cAlive()) {
+    Serial.println("no I2C pullups, sensor skipped");
+    return;
+  }
   present = aht.begin();
   if (!present) Serial.println("AHT sensor not found");
 }
@@ -17,6 +29,7 @@ void sensorUpdate(uint32_t now) {
   last = now;
 
   if (!present) {
+    if (!i2cAlive()) return;
     present = aht.begin();
     if (!present) return;
   }
