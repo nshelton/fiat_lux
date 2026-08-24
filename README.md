@@ -51,8 +51,15 @@ Other envs:
 
 ## control (HTTP, port 80)
 
-Open `http://fiatlux.local/` — the device serves its own control page with mode
-buttons, master brightness and the four animation faders. Two endpoints back it,
+Open `http://fiatlux.local/` — the device serves its own control page with the
+outdoor and indoor readings across the top, mode buttons, colour pickers,
+streaming, master brightness and the four animation faders.
+
+The readings live on the page rather than the panel: four numbers squeezed onto
+one 32px row were never legible, and the clock has the space to itself now. The
+page repolls `/state` every 10s and applies only `t` from it — taking the whole
+object would yank a slider or picker back mid-drag. `-1` shows as `--`, which is
+what weather and the sensor report before their first successful read. Two endpoints back it,
 and both are just as usable from curl:
 
 - `GET /state` → `{"mode":N,"v":[bri,f1,f2,f3,f4],"fg":"rrggbb","bg":"rrggbb"}`

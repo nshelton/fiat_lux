@@ -20,6 +20,8 @@ h2{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:#5a5a5a;ma
 canvas{width:100%;image-rendering:pixelated;border-radius:6px;background:#000;display:block;margin-bottom:26px}
 button{background:#161618;color:#bdbdbd;border:1px solid #2a2a2e;border-radius:6px;padding:11px;font:inherit;cursor:pointer}
 button.on{background:#e8e6e3;color:#0b0b0c;border-color:#e8e6e3}
+#env{display:grid;grid-template-columns:auto 1fr 1fr;gap:3px 14px;font-size:13px;color:#7a7a7a;margin-bottom:22px}
+#env b{color:#e8e6e3;font-weight:400}
 #cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:26px}
 #cols label{margin-bottom:0}
 input[type=color]{height:38px;padding:2px;border:1px solid #2a2a2e;border-radius:6px;background:#161618;cursor:pointer}
@@ -28,7 +30,7 @@ span{display:flex;justify-content:space-between;font-size:12px;color:#7a7a7a;mar
 i{font-style:normal;color:#e8e6e3}
 input{width:100%;accent-color:#e8e6e3}
 </style>
-<main><h1>fiat lux</h1><div id=modes></div>
+<main><h1>fiat lux</h1><div id=env></div><div id=modes></div>
 <h2>color</h2><div id=cols>
 <label><span>foreground</span><input type=color id=cfg></label>
 <label><span>background</span><input type=color id=cbg></label></div>
@@ -54,7 +56,13 @@ cfg.value='#'+s.fg;cbg.value='#'+s.bg}
 setInterval(async()=>{if(!dirty||busy)return;dirty=false;busy=true;
 try{await fetch('/set?mode='+s.mode+'&bri='+s.v[0]+'&f1='+s.v[1]+'&f2='+s.v[2]+'&f3='+s.v[3]+'&f4='+s.v[4]+'&fg='+s.fg+'&bg='+s.bg)}catch(e){}
 busy=false},120);
-fetch('/state').then(r=>r.json()).then(j=>{s=j;draw()});draw();
+function drawEnv(t){let f=v=>v<0?'--':v;
+env.innerHTML='<span>out</span><b>'+f(t[0])+'&deg;F</b><b>'+f(t[1])+'%</b>'+
+'<span>in</span><b>'+f(t[2])+'&deg;F</b><b>'+f(t[3])+'%</b>'}
+drawEnv([-1,-1,-1,-1]);
+fetch('/state').then(r=>r.json()).then(j=>{s=j;draw();drawEnv(j.t)});draw();
+// readings only -- assigning the whole state here would fight a drag in progress
+setInterval(()=>fetch('/state').then(r=>r.json()).then(j=>drawEnv(j.t)).catch(e=>{}),10000);
 
 // ---- streaming: render a frame here, POST the raw 1536 bytes to /frame ----
 // a pattern fills f[] with RGB triplets at (y*W+x)*3, same contract as tools/stream.py
@@ -105,11 +113,13 @@ static void sendBody(WiFiClient& c, const char* type, const char* body, size_t l
 }
 
 static void sendState(WiFiClient& c) {
-  char body[96];
+  char body[160];
   int n = snprintf(body, sizeof(body),
-                   "{\"mode\":%u,\"v\":[%u,%u,%u,%u,%u],\"fg\":\"%06lx\",\"bg\":\"%06lx\"}",
+                   "{\"mode\":%u,\"v\":[%u,%u,%u,%u,%u],\"fg\":\"%06lx\",\"bg\":\"%06lx\","
+                   "\"t\":[%d,%d,%d,%d]}",
                    g_mode, g_brightness, g_fader[0], g_fader[1], g_fader[2], g_fader[3],
-                   (unsigned long)g_fg, (unsigned long)g_bg);
+                   (unsigned long)g_fg, (unsigned long)g_bg,
+                   g_weather_temp, g_weather_humidity, g_sensor_temp, g_sensor_humidity);
   sendBody(c, "application/json", body, n);
 }
 

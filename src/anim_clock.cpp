@@ -22,16 +22,6 @@ struct ClockAnim : Animation {
     writeString(buf + 6, 3, 0, 12, fg, 1);   // weekday
     writeString(buf + 9, 2, 12, 12, fg, 1);  // day
     writeString(buf + 11, 3, 20, 12, fg, 1); // month
-
-    char num[8];
-    snprintf(num, sizeof(num), "%d", g_weather_temp);
-    writeString(num, strlen(num), 0, 0, fg, 1);
-    snprintf(num, sizeof(num), "%d", g_weather_humidity);
-    writeString(num, strlen(num), 8, 0, fg, 1);
-    snprintf(num, sizeof(num), "%d", g_sensor_temp);
-    writeString(num, strlen(num), 16, 0, fg, 1);
-    snprintf(num, sizeof(num), "%d", g_sensor_humidity);
-    writeString(num, strlen(num), 24, 0, fg, 1);
   }
 };
 
