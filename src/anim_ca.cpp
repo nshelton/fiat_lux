@@ -13,8 +13,6 @@ static uint8_t& cell(int x, int y) {
 struct CaAnim : Animation {
   uint32_t last_step = 0;
 
-  const char* name() override { return "wolfram"; }
-
   void begin() override {
     for (int i = 0; i < NUM_LEDS; i++) grid[i] = random(0, 2);
   }

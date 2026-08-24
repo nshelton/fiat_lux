@@ -6,8 +6,6 @@
 //   0: index chase (led 0 red, walks the physical chain in wiring order)
 //   1: column sweep   2: row sweep   3: solid white ramp (power cap check)
 struct TestAnim : Animation {
-  const char* name() override { return "test"; }
-
   void frame(uint32_t now) override {
     clear();
     switch (g_fader / 64) {

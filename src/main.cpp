@@ -16,8 +16,6 @@ static const uint8_t NUM_ANIMS = sizeof(anims) / sizeof(anims[0]);
 
 void setup() {
   Serial.begin(115200);
-  uint32_t t0 = millis();
-  while (!Serial && millis() - t0 < 3000) {}
   Serial.println("boot");
   prefsLoad();
   matrixSetup();

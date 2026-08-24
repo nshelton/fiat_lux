@@ -4,8 +4,6 @@
 #include "timesync.h"
 
 struct ClockAnim : Animation {
-  const char* name() override { return "clock"; }
-
   void frame(uint32_t now) override {
     clear(CRGB(g_bg));
     CRGB fg = CRGB(g_fg);

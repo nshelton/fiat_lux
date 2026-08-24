@@ -10,8 +10,6 @@ struct ScrollAnim : Animation {
   int len = 0;
   int pos = 0;  // pixels scrolled, 1/16ths
 
-  const char* name() override { return "scroll"; }
-
   void build() {
     char dt[16];
     getDateTimeString(dt);  // hhmmsswwwddmmm

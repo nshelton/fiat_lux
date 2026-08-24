@@ -2,7 +2,6 @@
 #include <stdint.h>
 
 struct Animation {
-  virtual const char* name() = 0;
   virtual void begin() {}
   virtual void frame(uint32_t now_ms) = 0;
 };

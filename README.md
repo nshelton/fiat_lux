@@ -39,10 +39,9 @@ The device prints its IP on serial (115200 baud) at boot and advertises itself
 as `fiatlux.local`. The OTA password in `secrets.h` must match `--auth` in
 `[env:ota]`; set `upload_port` to the IP if mDNS does not resolve for you.
 
+Neither `panel` nor `bringup` links in wifi, so neither can be flashed over OTA.
+
 Other envs:
-- `usb_safe` — LED power capped at 300 mA. Left over from the Nano, where the
-  panel back-fed off the board's 5V rail and brownout-looped the USB port. With
-  the panel on BAT the diode-OR blocks that path, so this is belt-and-braces.
 - `panel` — matrix and test patterns only, no wifi linked in. Walks the index
   chase up a brightness ladder (1, 2, 4 ... 255), announcing each step on
   serial. Use it to validate the data path in isolation: with no wifi in the
@@ -53,14 +52,15 @@ Other envs:
 
 Open `http://fiatlux.local/` — the device serves its own control page with the
 outdoor and indoor readings across the top, mode buttons, colour pickers,
-streaming, master brightness and the four animation faders.
+streaming, and the brightness and fader sliders.
 
 The readings live on the page rather than the panel: four numbers squeezed onto
 one 32px row were never legible, and the clock has the space to itself now. The
 page repolls `/state` every 10s and applies only `t` from it — taking the whole
 object would yank a slider or picker back mid-drag. `-1` shows as `--`, which is
-what weather and the sensor report before their first successful read. Two endpoints back it,
-and both are just as usable from curl:
+what weather and the sensor report before their first successful read.
+
+Two endpoints back the page, and both are just as usable from curl:
 
 - `GET /state` → `{"mode":N,"v":[bri,f1],"fg":"rrggbb","bg":"rrggbb","t":[...]}`
 - `GET /set?mode=N&bri=N&f1=N&fg=rrggbb&bg=rrggbb` → the same JSON. Every param
@@ -115,8 +115,9 @@ Packets are `'F' 'L' seq idx_hi idx_lo count flags` + `count` RGB triplets.
 `idx` is a raster pixel index (`y * 32 + x`) with `y = 0` at the top of the
 image — the sender never sees the serpentine wiring or the panel's orientation,
 both of which `setRaster()` in `src/matrix.cpp` handles. `flags` bit 0 closes a
-frame, which is what triggers the show. Streaming overrides the selected animation; it resumes 1s after the last
-packet.
+frame, which is what triggers the show.
+
+Streaming overrides the selected animation; it resumes 1s after the last packet.
 
 Many frames can land between render passes; the receiver drains all of them and
 shows only the last, so a fast sender drops stale frames instead of queueing
@@ -137,9 +138,10 @@ falls back to its animation after the usual 1s. `white` and `black` are the
 stress-test pair -- both are *held* (the pump keeps posting), so strobe between
 those two rather than between `white` and `off`. Note `white` is still subject
 to `MAX_POWER_MA`, so it measures the FastLED limiter's ceiling, not 512 LEDs at
-full tilt; brightness applies too, so push the slider to 255 first. The canvas above the faders is a
-live preview of what is being sent, so the page is useful without line of sight
-to the panel.
+full tilt; brightness applies too, so push the slider to 255 first.
+
+The canvas below the buttons is a live preview of what is being sent, so the
+page is useful without line of sight to the panel.
 
 Adding a pattern there is a function and a `PAT` entry in `src/http.cpp`, same
 contract as `tools/stream.py` — fill `f[(y * W + x) * 3]` with RGB. State
@@ -158,12 +160,24 @@ or adding a websocket library.
   `net ok` / `sensor ok`) show which subsystem is stuck.
 - ESP32 resets when its own rail sags and WiFi transmit pulls ~500 mA peaks, so
   a marginal supply shows up as a brownout reset rather than a glitchy panel.
+- HTTP, mDNS and OTA are all serviced from `loop()`, so anything that blocks it
+  takes OTA with it and recovery is a power cycle. There is no watchdog. To tell
+  a wedged loop from a deaf panel: `curl /state` answering means the MCU is fine
+  and the panel is not listening; silence while `ping` still replies means the
+  loop is stuck.
+- The AHT reads the panel as much as the room if it is mounted near the matrix —
+  512 LEDs put out real heat. Move it away for a meaningful indoor number.
 
 ## roadmap
 
 - [ ] inline ~5A fuse on the DC input
+- [ ] watchdog — a wedged `loop()` currently needs a physical power cycle,
+      because OTA is serviced from that same loop
+- [ ] move the AHT off the panel so the indoor reading means the room
 - [x] ItsyBitsy ESP32 port — D5's level shifter fixes the low-brightness
       glitches the Nano's 3.3V data caused; the brightness floor that worked
       around them is gone and the slider runs to 0
-- [x] UDP frame streaming + `tools/stream.py` for live animation prototyping
+- [x] frame streaming — UDP from `tools/stream.py`, HTTP from the control page
+- [x] one foreground / one background colour, persisted to NVS
+- [x] temp + humidity readouts moved off the panel onto the control page
 - [x] scrolling text animation

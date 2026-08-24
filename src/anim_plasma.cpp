@@ -2,8 +2,6 @@
 #include "matrix.h"
 
 struct PlasmaAnim : Animation {
-  const char* name() override { return "plasma"; }
-
   void frame(uint32_t now) override {
     uint32_t t = now / 8;
     for (int y = 0; y < HEIGHT; y++)

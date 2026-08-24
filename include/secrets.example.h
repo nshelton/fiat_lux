@@ -9,5 +9,5 @@ static const char weather_api_path[] =
     "/v1/forecast?latitude=34.00&longitude=-118.40"
     "&current=temperature_2m,relative_humidity_2m&temperature_unit=fahrenheit";
 
-// must match the curl -u password in platformio.ini [env:ota]
+// must match --auth in platformio.ini [env:ota]
 static const char ota_password[] = "fiatlux";
