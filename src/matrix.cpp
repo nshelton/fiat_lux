@@ -22,6 +22,14 @@ void setPixel(int x, int y, CRGB col) {
   leds[XY(x, y)] = col;
 }
 
+// Stream senders address pixels as a raster index with y=0 at the top of their
+// image, which lands at the opposite end of the panel from where the animations
+// put y=0 -- streamed frames came out vertically mirrored against the clock. The
+// flip lives here so the udp and http paths cannot drift apart.
+void setRaster(int idx, CRGB col) {
+  setPixel(idx % WIDTH, HEIGHT - 1 - idx / WIDTH, col);
+}
+
 void clear(CRGB col) {
   fill_solid(leds, NUM_LEDS, col);
 }

@@ -120,7 +120,7 @@ static void recvFrame(WiFiClient& c) {
 
   const uint8_t* p = body;
   for (int i = 0; i < NUM_LEDS; i++, p += 3)
-    setPixel(i % WIDTH, i / WIDTH, CRGB(p[0], p[1], p[2]));
+    setRaster(i, CRGB(p[0], p[1], p[2]));
   streamHttpFrame(millis());
 }
 

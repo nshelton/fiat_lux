@@ -80,9 +80,10 @@ python3 tools/stream.py fiatlux.local
 ```
 
 Packets are `'F' 'L' seq idx_hi idx_lo count flags` + `count` RGB triplets.
-`idx` is a raster pixel index (`y * 32 + x`) — the sender never sees the
-serpentine wiring — and `flags` bit 0 closes a frame, which is what triggers the
-show. Streaming overrides the selected animation; it resumes 1s after the last
+`idx` is a raster pixel index (`y * 32 + x`) with `y = 0` at the top of the
+image — the sender never sees the serpentine wiring or the panel's orientation,
+both of which `setRaster()` in `src/matrix.cpp` handles. `flags` bit 0 closes a
+frame, which is what triggers the show. Streaming overrides the selected animation; it resumes 1s after the last
 packet.
 
 Many frames can land between render passes; the receiver drains all of them and

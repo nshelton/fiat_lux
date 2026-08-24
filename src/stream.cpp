@@ -44,7 +44,7 @@ bool streamUpdate(uint32_t now, bool net_up) {
     int idx = (buf[3] << 8) | buf[4];
     const uint8_t* p = buf + STREAM_HEADER;
     for (int i = 0; i < count && idx + i < NUM_LEDS; i++, p += 3)
-      setPixel((idx + i) % WIDTH, (idx + i) / WIDTH, CRGB(p[0], p[1], p[2]));
+      setRaster(idx + i, CRGB(p[0], p[1], p[2]));
 
     if (buf[6] & 1) complete = true;
   }
