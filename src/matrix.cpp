@@ -2,7 +2,6 @@
 #include "font.h"
 
 CRGB leds[NUM_LEDS];
-CRGB g_palette[PALETTE_SIZE];
 
 void matrixSetup() {
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
@@ -56,9 +55,4 @@ void writeString(const char* str, int len, int x, int y, CRGB col, uint8_t scale
   int w = (scale == 1) ? 4 : 6;
   for (int i = 0; i < len; i++)
     putChar(str[i], i * w + x, y, scale, col);
-}
-
-void updatePalette(uint32_t t) {
-  for (int i = 0; i < PALETTE_SIZE; i++)
-    g_palette[i] = CHSV(i * 8 + t / 32, 200, 255);
 }

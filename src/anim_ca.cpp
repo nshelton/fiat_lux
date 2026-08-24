@@ -1,5 +1,6 @@
 #include "anim.h"
 #include "matrix.h"
+#include "state.h"
 
 // elementary CA on the top row, history scrolls down
 static uint8_t grid[NUM_LEDS];
@@ -27,10 +28,10 @@ struct CaAnim : Animation {
         cell(x, 0) = RULE[cell(x - 1, 1) * 4 + cell(x, 1) * 2 + cell(x + 1, 1)];
     }
 
-    clear();
+    clear(CRGB(g_bg));
     for (int y = 0; y < HEIGHT; y++)
       for (int x = 0; x < WIDTH; x++)
-        if (cell(x, y)) setPixel(x, y, CHSV(now / 100 + y * 4, 255, 255));
+        if (cell(x, y)) setPixel(x, y, CRGB(g_fg));
   }
 };
 

@@ -55,9 +55,30 @@ Open `http://fiatlux.local/` — the device serves its own control page with mod
 buttons, master brightness and the four animation faders. Two endpoints back it,
 and both are just as usable from curl:
 
-- `GET /state` → `{"mode":N,"v":[bri,f1,f2,f3,f4]}`
-- `GET /set?mode=N&bri=N&f1=N&f2=N&f3=N&f4=N` → the same JSON. Every param is
-  optional and clamped to 0-255, so you can send just the one you care about.
+- `GET /state` → `{"mode":N,"v":[bri,f1,f2,f3,f4],"fg":"rrggbb","bg":"rrggbb"}`
+- `GET /set?mode=N&bri=N&f1=N&f2=N&f3=N&f4=N&fg=rrggbb&bg=rrggbb` → the same
+  JSON. Every param is optional, the numeric ones clamp to 0-255, so you can
+  send just the one you care about.
+
+Colours are six hex digits with no `#` — a `#` in a URL starts a fragment and
+never reaches the device. A value that is not exactly six hex digits is ignored
+rather than half-parsed.
+
+```
+curl "http://fiatlux.local/set?fg=ff8800&bg=001020"
+```
+
+The two pickers set one foreground and one background, used by the clock, the
+ticker and the wolfram CA (live cells are `fg`, the rest `bg`). Plasma and the
+test patterns keep their own colours: plasma *is* a colour field with no
+foreground in it, and the test pattern's red pixel 0 is how you find the start
+of the chain.
+
+They persist to NVS. The picker streams a new colour on every mouse move and NVS
+has finite erase cycles, so `prefsUpdate()` only writes once a colour has held
+still for `PREFS_SETTLE_MS` — drag freely, one write lands when you settle, and
+`colors saved` appears on serial. `prefsLoad()` runs before `matrixSetup()`, so
+the first frame after a reboot is already the right colour.
 
 Modes: `0` clock, `1` wolfram CA, `2` plasma, `3` test patterns, `4` ticker.
 

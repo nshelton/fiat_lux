@@ -9,6 +9,7 @@
 #include "timesync.h"
 #include "weather.h"
 #include "sensor.h"
+#include "prefs.h"
 
 static Animation* const anims[] = {anim_clock, anim_ca, anim_plasma, anim_test, anim_scroll};
 static const uint8_t NUM_ANIMS = sizeof(anims) / sizeof(anims[0]);
@@ -18,6 +19,7 @@ void setup() {
   uint32_t t0 = millis();
   while (!Serial && millis() - t0 < 3000) {}
   Serial.println("boot");
+  prefsLoad();
   matrixSetup();
   Serial.println("matrix ok");
   netSetup();
@@ -34,6 +36,7 @@ void loop() {
   timeSyncUpdate(now, net_up);
   weatherUpdate(now, net_up);
   sensorUpdate(now);
+  prefsUpdate(now);
 
   static uint8_t active = 255;
   bool streamed = streamUpdate(now, net_up);

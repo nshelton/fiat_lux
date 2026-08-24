@@ -27,7 +27,6 @@ struct ScrollAnim : Animation {
   }
 
   void frame(uint32_t now) override {
-    updatePalette(now / 100);
     pos += 4 + g_fader[0] / 8;  // 0.25 - 2.2 px per frame
 
     int x = WIDTH - (pos >> 4);
@@ -37,9 +36,9 @@ struct ScrollAnim : Animation {
       x = WIDTH;
     }
 
-    clear();
+    clear(CRGB(g_bg));
     for (int i = 0; i < len; i++)
-      putChar(text[i], x + i * 4, 6, 1, g_palette[i % PALETTE_SIZE]);
+      putChar(text[i], x + i * 4, 6, 1, CRGB(g_fg));
   }
 };
 

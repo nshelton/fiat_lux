@@ -31,6 +31,10 @@
 #define WEATHER_MS       (10UL * 60 * 1000)
 #define SENSOR_MS        (60UL * 1000)
 
+// The colour pickers stream updates while being dragged and NVS wears out, so
+// a colour has to hold still this long before it gets written.
+#define PREFS_SETTLE_MS  2000
+
 // ---- UDP pixel streaming (tools/stream.py) ----
 #define STREAM_PORT        8001
 #define STREAM_TIMEOUT_MS  1000   // no packets for this long -> local animations resume
