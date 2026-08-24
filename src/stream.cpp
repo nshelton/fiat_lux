@@ -10,6 +10,14 @@ static WiFiUDP udp;
 static bool begun = false;
 static uint32_t last_frame = 0;
 static uint8_t buf[STREAM_BUF];
+static bool http_pending = false;
+
+// browsers cannot open a udp socket, so the control page posts whole frames to
+// /frame instead; http.cpp fills the pixels and hands off the show to here
+void streamHttpFrame(uint32_t now) {
+  last_frame = now;
+  http_pending = true;
+}
 
 bool streamActive(uint32_t now) {
   return last_frame != 0 && now - last_frame < STREAM_TIMEOUT_MS;
@@ -22,7 +30,8 @@ bool streamUpdate(uint32_t now, bool net_up) {
     begun = true;
   }
 
-  bool complete = false;
+  bool complete = http_pending;
+  http_pending = false;
   int avail;
   // drain everything queued this pass; showing only the last frame drops stale ones
   while ((avail = udp.parsePacket()) > 0) {

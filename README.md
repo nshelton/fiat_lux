@@ -89,6 +89,32 @@ Many frames can land between render passes; the receiver drains all of them and
 shows only the last, so a fast sender drops stale frames instead of queueing
 them.
 
+### from the browser
+
+Browsers cannot open a UDP socket, so the control page renders patterns itself
+and POSTs whole frames instead:
+
+- `POST /frame` — body is exactly `32 * 16 * 3` = 1536 raw RGB bytes in raster
+  order, same layout the UDP path uses. No Content-Length parsing: the body is
+  always a full frame, so the handler reads that many bytes or drops it. Replies
+  `204`.
+
+The `stream` row on the page picks a pattern; `off` stops sending and the panel
+falls back to its animation after the usual 1s. The canvas above the faders is a
+live preview of what is being sent, so the page is useful without line of sight
+to the panel.
+
+Adding a pattern there is a function and a `PAT` entry in `src/http.cpp`, same
+contract as `tools/stream.py` — fill `f[(y * W + x) * 3]` with RGB. State
+between frames is fine (`fire` keeps a heat buffer; `bounce` scales the previous
+frame down instead of clearing, which is where its trail comes from).
+
+Awaiting each POST is the backpressure — never more than one frame in flight, so
+a slow link degrades the frame rate instead of queueing up latency. A connection
+per frame sounds wasteful but measures ~34 fps on a quiet LAN, comfortably above
+the 30 fps the UDP sender targets, so it was not worth keeping connections alive
+or adding a websocket library.
+
 ## known quirks
 
 - If the board hangs at boot, the serial breadcrumbs (`boot` / `matrix ok` /
