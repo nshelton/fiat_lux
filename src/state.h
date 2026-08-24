@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 extern uint8_t g_brightness;  // master brightness, HTTP bri=
-extern uint8_t g_fader[4];    // HTTP f1-f4, free params for animations
+extern uint8_t g_fader;       // HTTP f1= -- test pattern select, ticker speed
 extern uint8_t g_mode;        // active animation, HTTP mode=
 
 extern uint32_t g_fg;         // 0xRRGGBB, HTTP fg= -- text and live cells

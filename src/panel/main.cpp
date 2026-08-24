@@ -18,7 +18,7 @@ static const uint32_t STEP_MS = 4000;
 void setup() {
   Serial.begin(115200);
   matrixSetup();
-  g_fader[0] = 0;  // index chase
+  g_fader = 0;  // index chase
   Serial.println("panel test");
 }
 

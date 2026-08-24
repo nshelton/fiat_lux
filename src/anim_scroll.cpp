@@ -27,7 +27,7 @@ struct ScrollAnim : Animation {
   }
 
   void frame(uint32_t now) override {
-    pos += 4 + g_fader[0] / 8;  // 0.25 - 2.2 px per frame
+    pos += 4 + g_fader / 8;  // 0.25 - 2.2 px per frame
 
     int x = WIDTH - (pos >> 4);
     if (x <= -len * 4) {

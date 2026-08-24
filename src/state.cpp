@@ -1,7 +1,7 @@
 #include "state.h"
 
 uint8_t g_brightness = 200;
-uint8_t g_fader[4] = {128, 128, 128, 128};
+uint8_t g_fader = 128;
 uint8_t g_mode = 0;
 
 uint32_t g_fg = 0xFFFFFF;

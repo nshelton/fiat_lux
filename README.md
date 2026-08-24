@@ -62,10 +62,14 @@ object would yank a slider or picker back mid-drag. `-1` shows as `--`, which is
 what weather and the sensor report before their first successful read. Two endpoints back it,
 and both are just as usable from curl:
 
-- `GET /state` → `{"mode":N,"v":[bri,f1,f2,f3,f4],"fg":"rrggbb","bg":"rrggbb"}`
-- `GET /set?mode=N&bri=N&f1=N&f2=N&f3=N&f4=N&fg=rrggbb&bg=rrggbb` → the same
-  JSON. Every param is optional, the numeric ones clamp to 0-255, so you can
-  send just the one you care about.
+- `GET /state` → `{"mode":N,"v":[bri,f1],"fg":"rrggbb","bg":"rrggbb","t":[...]}`
+- `GET /set?mode=N&bri=N&f1=N&fg=rrggbb&bg=rrggbb` → the same JSON. Every param
+  is optional, the numeric ones clamp to 0-255, so you can send just the one you
+  care about.
+
+`f1` is the only fader. It means something different per mode: in mode 3 it
+picks the test pattern, in mode 4 it sets the ticker speed. There used to be an
+`f2`-`f4` alongside it as free params for animations; nothing ever read them.
 
 Colours are six hex digits with no `#` — a `#` in a URL starts a fragment and
 never reaches the device. A value that is not exactly six hex digits is ignored
@@ -93,11 +97,11 @@ Modes: `0` clock, `1` wolfram CA, `2` plasma, `3` test patterns, `4` ticker.
 curl "http://fiatlux.local/set?mode=4&bri=120"
 ```
 
-Test patterns (mode 3): fader1 picks index chase / column sweep / row sweep /
+Test patterns (mode 3): the fader picks index chase / column sweep / row sweep /
 solid white ramp for verifying panel wiring and the power cap.
 
-The ticker (mode 4) scrolls time, date and both temp/humidity pairs; fader1 sets
-the speed. It rebuilds the string each wrap so it stays current.
+The ticker (mode 4) scrolls time, date and both temp/humidity pairs; the fader
+sets the speed. It rebuilds the string each wrap so it stays current.
 
 ## streaming (UDP, port 8001)
 

@@ -38,10 +38,10 @@ input{width:100%;accent-color:#e8e6e3}
 <div id=faders></div></main>
 <script>
 const M=['clock','wolfram','plasma','test','ticker'],
-F=['brightness','fader 1','fader 2','fader 3','fader 4'],
+F=['brightness','fader'],
 P=['off','plasma','rainbow','ripple','fire','bounce','white','black'],
 W=32,H=16,N=W*H;
-let s={mode:0,v:[200,128,128,128,128],fg:'ffffff',bg:'000000'},dirty=false,busy=false;
+let s={mode:0,v:[200,128],fg:'ffffff',bg:'000000'},dirty=false,busy=false;
 cfg.oninput=()=>{s.fg=cfg.value.slice(1);dirty=true};
 cbg.oninput=()=>{s.bg=cbg.value.slice(1);dirty=true};
 M.forEach((n,i)=>{let b=document.createElement('button');b.textContent=n;
@@ -54,7 +54,7 @@ function draw(){[...modes.children].forEach((b,i)=>b.className=i==s.mode?'on':''
 s.v.forEach((x,i)=>{r=window['r'+i];r.value=x;window['v'+i].textContent=x});
 cfg.value='#'+s.fg;cbg.value='#'+s.bg}
 setInterval(async()=>{if(!dirty||busy)return;dirty=false;busy=true;
-try{await fetch('/set?mode='+s.mode+'&bri='+s.v[0]+'&f1='+s.v[1]+'&f2='+s.v[2]+'&f3='+s.v[3]+'&f4='+s.v[4]+'&fg='+s.fg+'&bg='+s.bg)}catch(e){}
+try{await fetch('/set?mode='+s.mode+'&bri='+s.v[0]+'&f1='+s.v[1]+'&fg='+s.fg+'&bg='+s.bg)}catch(e){}
 busy=false},120);
 function drawEnv(t){let f=v=>v<0?'--':v;
 env.innerHTML='<span>out</span><b>'+f(t[0])+'&deg;F</b><b>'+f(t[1])+'%</b>'+
@@ -115,9 +115,9 @@ static void sendBody(WiFiClient& c, const char* type, const char* body, size_t l
 static void sendState(WiFiClient& c) {
   char body[160];
   int n = snprintf(body, sizeof(body),
-                   "{\"mode\":%u,\"v\":[%u,%u,%u,%u,%u],\"fg\":\"%06lx\",\"bg\":\"%06lx\","
+                   "{\"mode\":%u,\"v\":[%u,%u],\"fg\":\"%06lx\",\"bg\":\"%06lx\","
                    "\"t\":[%d,%d,%d,%d]}",
-                   g_mode, g_brightness, g_fader[0], g_fader[1], g_fader[2], g_fader[3],
+                   g_mode, g_brightness, g_fader,
                    (unsigned long)g_fg, (unsigned long)g_bg,
                    g_weather_temp, g_weather_humidity, g_sensor_temp, g_sensor_humidity);
   sendBody(c, "application/json", body, n);
@@ -207,10 +207,7 @@ void httpUpdate(bool net_up) {
     int v;
     if ((v = param(req, "mode=")) >= 0) g_mode = v;
     if ((v = param(req, "bri=")) >= 0) g_brightness = v;
-    for (int i = 0; i < 4; i++) {
-      char key[4] = {'f', (char)('1' + i), '=', 0};
-      if ((v = param(req, key)) >= 0) g_fader[i] = v;
-    }
+    if ((v = param(req, "f1=")) >= 0) g_fader = v;
     long c;
     if ((c = paramHex(req, "fg=")) >= 0) g_fg = c;
     if ((c = paramHex(req, "bg=")) >= 0) g_bg = c;

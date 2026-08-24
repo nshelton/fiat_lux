@@ -10,7 +10,7 @@ struct TestAnim : Animation {
 
   void frame(uint32_t now) override {
     clear();
-    switch (g_fader[0] / 64) {
+    switch (g_fader / 64) {
       case 0:
         leds[0] = CRGB::Red;
         leds[(now / 100) % NUM_LEDS] = CRGB::White;
