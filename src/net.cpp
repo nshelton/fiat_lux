@@ -6,6 +6,7 @@
 
 void netSetup() {
   WiFi.setHostname(HOSTNAME);
+  WiFi.setTimeout(0);  // begin() otherwise blocks up to 50s per attempt; netUpdate polls status
 }
 
 bool netUpdate(uint32_t now) {

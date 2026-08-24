@@ -21,21 +21,58 @@ Other envs:
   browns out the USB port in a reset loop.
 - `bringup` — blink + serial heartbeat only, for debugging board/cable/USB.
 
-## control (OSC over UDP, port 8000, TouchOSC "Simple" layout page 1)
+## control (HTTP, port 80)
 
-- `/1/toggle1-4` — select animation: clock, wolfram CA, plasma, test patterns
-- `/1/fader5` — master brightness
-- `/1/fader1-4` — free animation params
+Open `http://<device-ip>/` — the device serves its own control page with mode
+buttons, master brightness and the four animation faders. Two endpoints back it,
+and both are just as usable from curl:
 
-Test patterns (`toggle4`): fader1 picks index chase / column sweep / row sweep /
+- `GET /state` → `{"mode":N,"v":[bri,f1,f2,f3,f4]}`
+- `GET /set?mode=N&bri=N&f1=N&f2=N&f3=N&f4=N` → the same JSON. Every param is
+  optional and clamped to 0-255, so you can send just the one you care about.
+
+Modes: `0` clock, `1` wolfram CA, `2` plasma, `3` test patterns, `4` ticker.
+
+```
+curl "http://192.168.0.222/set?mode=4&bri=120"
+```
+
+Test patterns (mode 3): fader1 picks index chase / column sweep / row sweep /
 solid white ramp for verifying panel wiring and the power cap.
+
+The ticker (mode 4) scrolls time, date and both temp/humidity pairs; fader1 sets
+the speed. It rebuilds the string each wrap so it stays current.
+
+## streaming (UDP, port 8001)
+
+`tools/stream.py <ip>` pushes live frames and runs a plasma demo:
+
+```
+python3 tools/stream.py 192.168.0.222
+```
+
+Packets are `'F' 'L' seq idx_hi idx_lo count flags` + `count` RGB triplets.
+`idx` is a raster pixel index (`y * 32 + x`) — the sender never sees the
+serpentine wiring — and `flags` bit 0 closes a frame, which is what triggers the
+show. Streaming overrides the selected animation; it resumes 1s after the last
+packet.
+
+The header carries its own `count` because WiFiNINA's `parsePacket()` reports
+every byte the NINA has queued for the socket rather than one datagram: frames
+arrive concatenated and can split across reads, so the receiver walks whole
+packets and carries the remainder. It must also never bail with bytes still
+queued — the next `parsePacket()` discards them one at a time while more arrive,
+which starves the render loop and the HTTP server until the panel looks hung.
 
 ## known quirks
 
 - **Pixel glitches at low brightness**: the Nano's 3.3V data is marginal against
   the WS2812 threshold (0.7 x VDD). A heavily loaded supply sags enough to make
-  it clean; a dim display lets the rail float high and sparkles return. Real fix
-  is the 74AHCT125 level shifter (see roadmap).
+  it clean; a dim display lets the rail float high and sparkles return. Dim it
+  far enough and the first pixel stops hearing the data entirely: the panel
+  latches on its last frame while the Nano keeps running (web page still
+  answers). `MIN_BRIGHTNESS` in `src/config.h` floors the slider above that
+  point; set it to 0 once the 74AHCT125 level shifter (see roadmap) is in.
 - If the board hangs at boot, the serial breadcrumbs (`boot` / `matrix ok` /
   `net ok` / `sensor ok`) show which subsystem is stuck.
 - A flaky micro-USB cable produces disappearing/flapping ports and failed
@@ -46,5 +83,5 @@ solid white ramp for verifying panel wiring and the power cap.
 
 - [ ] 74AHCT125 level shifter between pin 2 and panel DIN (fixes glitches)
 - [ ] inline ~5A fuse on the DC input
-- [ ] UDP frame streaming + `tools/stream.py` for live animation prototyping
-- [ ] scrolling text animation (fonts and writeString already support it)
+- [x] UDP frame streaming + `tools/stream.py` for live animation prototyping
+- [x] scrolling text animation
