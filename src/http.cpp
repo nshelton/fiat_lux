@@ -16,7 +16,7 @@ main{max-width:380px;margin:0 auto}
 h1{font-size:13px;letter-spacing:.25em;text-transform:uppercase;color:#7a7a7a;margin:0 0 20px}
 h2{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:#5a5a5a;margin:0 0 10px;font-weight:400}
 #modes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:26px}
-#pats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+#pats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:8px;margin-bottom:10px}
 canvas{width:100%;image-rendering:pixelated;border-radius:6px;background:#000;display:block;margin-bottom:26px}
 button{background:#161618;color:#bdbdbd;border:1px solid #2a2a2e;border-radius:6px;padding:11px;font:inherit;cursor:pointer}
 button.on{background:#e8e6e3;color:#0b0b0c;border-color:#e8e6e3}
@@ -31,7 +31,7 @@ input{width:100%;accent-color:#e8e6e3}
 <script>
 const M=['clock','wolfram','plasma','test','ticker'],
 F=['brightness','fader 1','fader 2','fader 3','fader 4'],
-P=['off','plasma','rainbow','ripple','fire','bounce'],
+P=['off','plasma','rainbow','ripple','fire','bounce','white','black'],
 W=32,H=16,N=W*H;
 let s={mode:0,v:[200,128,128,128,128]},dirty=false,busy=false;
 M.forEach((n,i)=>{let b=document.createElement('button');b.textContent=n;
@@ -67,7 +67,11 @@ for(let p=0;p<N;p++){let h=heat[p],i=p*3;
 f[i]=Math.min(255,h*2);f[i+1]=Math.min(255,Math.max(0,(h-96)*2));f[i+2]=Math.min(255,Math.max(0,(h-192)*4))}},
 bounce:(f,t)=>{for(let i=0;i<N*3;i++)f[i]=f[i]*3/4;
 let x=Math.round((W-1)*(.5+.5*Math.sin(t*1.7))),y=Math.round((H-1)*(.5+.5*Math.sin(t*2.3))),i=(y*W+x)*3;
-f[i]=255;f[i+1]=200;f[i+2]=60}};
+f[i]=255;f[i+1]=200;f[i+2]=60},
+// stress test: held, not one-shot -- the pump keeps posting so the panel stays
+// put instead of falling back to the animation. 'off' is what stops sending.
+white:f=>f.fill(255),
+black:f=>f.fill(0)};
 P.forEach((n,i)=>{let b=document.createElement('button');b.textContent=n;
 b.onclick=()=>{pat=i;drawPats()};pats.append(b)});
 function drawPats(){[...pats.children].forEach((b,i)=>b.className=i==pat?'on':'')}

@@ -100,7 +100,11 @@ and POSTs whole frames instead:
   `204`.
 
 The `stream` row on the page picks a pattern; `off` stops sending and the panel
-falls back to its animation after the usual 1s. The canvas above the faders is a
+falls back to its animation after the usual 1s. `white` and `black` are the
+stress-test pair -- both are *held* (the pump keeps posting), so strobe between
+those two rather than between `white` and `off`. Note `white` is still subject
+to `MAX_POWER_MA`, so it measures the FastLED limiter's ceiling, not 512 LEDs at
+full tilt; brightness applies too, so push the slider to 255 first. The canvas above the faders is a
 live preview of what is being sent, so the page is useful without line of sight
 to the panel.
 
