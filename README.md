@@ -100,6 +100,7 @@ them.
 
 - [ ] inline ~5A fuse on the DC input
 - [x] ItsyBitsy ESP32 port — D5's level shifter fixes the low-brightness
-      glitches the Nano's 3.3V data caused, so `MIN_BRIGHTNESS` is 0
+      glitches the Nano's 3.3V data caused; the brightness floor that worked
+      around them is gone and the slider runs to 0
 - [x] UDP frame streaming + `tools/stream.py` for live animation prototyping
 - [x] scrolling text animation

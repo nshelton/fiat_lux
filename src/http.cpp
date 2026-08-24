@@ -6,9 +6,6 @@
 static WiFiServer server(HTTP_PORT);
 static bool begun = false;
 
-#define STR(x) #x
-#define XSTR(x) STR(x)
-
 static const char PAGE[] = R"HTML(<!doctype html><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1"><title>fiat lux</title>
 <style>
@@ -32,7 +29,7 @@ M.forEach((n,i)=>{let b=document.createElement('button');b.textContent=n;
 b.onclick=()=>{s.mode=i;draw();dirty=true};modes.append(b)});
 F.forEach((n,i)=>{let l=document.createElement('label');
 l.innerHTML='<span>'+n+'<i id=v'+i+'></i></span>';
-let r=document.createElement('input');r.type='range';r.min=i?0:)HTML" XSTR(MIN_BRIGHTNESS) R"HTML(;r.max=255;r.id='r'+i;
+let r=document.createElement('input');r.type='range';r.min=0;r.max=255;r.id='r'+i;
 r.oninput=()=>{s.v[i]=+r.value;draw();dirty=true};l.append(r);faders.append(l)});
 function draw(){[...modes.children].forEach((b,i)=>b.className=i==s.mode?'on':'');
 s.v.forEach((x,i)=>{r=window['r'+i];r.value=x;window['v'+i].textContent=x})}
@@ -102,7 +99,7 @@ void httpUpdate(bool net_up) {
   if (!strncmp(req, "GET /set", 8)) {
     int v;
     if ((v = param(req, "mode=")) >= 0) g_mode = v;
-    if ((v = param(req, "bri=")) >= 0) g_brightness = v < MIN_BRIGHTNESS ? MIN_BRIGHTNESS : v;
+    if ((v = param(req, "bri=")) >= 0) g_brightness = v;
     for (int i = 0; i < 4; i++) {
       char key[4] = {'f', (char)('1' + i), '=', 0};
       if ((v = param(req, key)) >= 0) g_fader[i] = v;

@@ -20,12 +20,6 @@
 
 #define FRAME_MS     33
 
-// Floor for the brightness slider. 0 because D5 drives real 5V logic; the
-// Nano's 3.3V data sat under the WS2812 threshold and needed 64 to stay clean.
-#ifndef MIN_BRIGHTNESS
-#define MIN_BRIGHTNESS 0
-#endif
-
 // ---- network ----
 #define HOSTNAME         "fiatlux"
 #define HTTP_PORT        80
