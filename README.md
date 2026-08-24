@@ -10,11 +10,18 @@ Panel data comes off **D5 (GPIO5)**, the ItsyBitsy's level-shifted 5V output —
 output only, which is exactly what it is there for. Put ~330R in series at the
 board end and keep a ground wire paired with the data run.
 
-Feed the 5V supply into the board's **USB pin** rather than powering the board
-separately. That puts the level shifter and the WS2812s on one rail, so the
-0.7 x VDD input threshold tracks the drive level: if the rail sags under load,
-both move together. Powered from `BAT` alone there is no 5V and D5 will not
-shift.
+Power the board off the panel's 5V through the **BAT** pin (rated 3.5-6V in).
+BAT and USB are diode-OR'd on board into `VHi`, and `VHi` is what D5 shifts up
+to -- so the shifter's high side is ~5V less a Schottky drop either way, and the
+laptop's USB cable can stay plugged in for serial while the panel supply is
+live. `VHi` is that OR gate's *output*: do not feed power into it.
+
+Because BAT is diode-isolated from `VHi`, USB power cannot flow back out to the
+panel. On USB alone the panel just stays dark instead of browning out the port.
+
+Never run the panel's own supply current through the board. The panel takes its
+several amps on its own leads straight from the PSU; the board only taps ~250 mA
+off that rail for itself.
 
 Panel ground and board ground still have to meet at the panel's DIN end — the
 shifter's output swings relative to the board's ground, so that is the
@@ -33,9 +40,9 @@ as `fiatlux.local`. The OTA password in `secrets.h` must match `--auth` in
 `[env:ota]`; set `upload_port` to the IP if mDNS does not resolve for you.
 
 Other envs:
-- `usb_safe` — LED power capped at 300 mA. Use whenever the wall supply is
-  unplugged: the panel back-feeds off the board's 5V rail, and at full power it
-  browns out the USB port in a reset loop.
+- `usb_safe` — LED power capped at 300 mA. Left over from the Nano, where the
+  panel back-fed off the board's 5V rail and brownout-looped the USB port. With
+  the panel on BAT the diode-OR blocks that path, so this is belt-and-braces.
 - `panel` — matrix and test patterns only, no wifi linked in. Walks the index
   chase up a brightness ladder (1, 2, 4 ... 255), announcing each step on
   serial. Use it to validate the data path in isolation: with no wifi in the
