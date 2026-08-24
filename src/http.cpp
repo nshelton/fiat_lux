@@ -1,4 +1,4 @@
-#include <WiFiNINA.h>
+#include <WiFi.h>
 #include "config.h"
 #include "state.h"
 #include "http.h"
@@ -42,24 +42,14 @@ busy=false},120);
 fetch('/state').then(r=>r.json()).then(j=>{s=j;draw()});draw();
 </script>)HTML";
 
-// WiFiClient::write does not loop on a short write, so feed it in chunks
-static void sendAll(WiFiClient& c, const char* data, size_t len) {
-  while (len) {
-    size_t n = c.write((const uint8_t*)data, len > 512 ? 512 : len);
-    if (n == 0) return;
-    data += n;
-    len -= n;
-  }
-}
-
 static void sendBody(WiFiClient& c, const char* type, const char* body, size_t len) {
   char head[128];
   int hn = snprintf(head, sizeof(head),
                     "HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %u\r\n"
                     "Connection: close\r\n\r\n",
                     type, (unsigned)len);
-  sendAll(c, head, hn);
-  sendAll(c, body, len);
+  c.write((const uint8_t*)head, hn);
+  c.write((const uint8_t*)body, len);
 }
 
 static void sendState(WiFiClient& c) {
@@ -123,7 +113,7 @@ void httpUpdate(bool net_up) {
   } else if (!strncmp(req, "GET / ", 6)) {
     sendBody(client, "text/html", PAGE, sizeof(PAGE) - 1);
   } else {
-    sendAll(client, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n", 45);
+    client.print("HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n");
   }
 
   client.stop();

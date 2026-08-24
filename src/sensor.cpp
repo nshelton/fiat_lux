@@ -6,12 +6,12 @@
 static Adafruit_AHTX0 aht;
 static bool present = false;
 
-// a floating I2C bus hangs SAMD Wire forever; a live sensor board
-// holds both lines high through its pullups
+// a live sensor board holds both lines high through its pullups; without one
+// there is nothing on the bus to talk to
 static bool i2cAlive() {
-  pinMode(PIN_WIRE_SDA, INPUT);
-  pinMode(PIN_WIRE_SCL, INPUT);
-  return digitalRead(PIN_WIRE_SDA) && digitalRead(PIN_WIRE_SCL);
+  pinMode(SDA, INPUT);
+  pinMode(SCL, INPUT);
+  return digitalRead(SDA) && digitalRead(SCL);
 }
 
 void sensorSetup() {

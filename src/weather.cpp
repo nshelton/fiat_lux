@@ -1,4 +1,4 @@
-#include <WiFiNINA.h>
+#include <WiFi.h>
 #include <ArduinoHttpClient.h>
 #include <ArduinoJson.h>
 #include "config.h"

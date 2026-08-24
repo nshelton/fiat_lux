@@ -1,12 +1,13 @@
-#include <WiFiNINA.h>
+#include <WiFi.h>
 #include <ArduinoOTA.h>
 #include "config.h"
 #include "net.h"
 #include "secrets.h"
 
 void netSetup() {
+  WiFi.mode(WIFI_STA);
   WiFi.setHostname(HOSTNAME);
-  WiFi.setTimeout(0);  // begin() otherwise blocks up to 50s per attempt; netUpdate polls status
+  WiFi.setSleep(false);  // modem sleep adds latency to the http server and to streaming
 }
 
 bool netUpdate(uint32_t now) {
@@ -17,18 +18,20 @@ bool netUpdate(uint32_t now) {
     if (last_attempt == 0 || now - last_attempt > 10000) {
       Serial.print("connecting to ");
       Serial.println(sec_ssid);
-      WiFi.begin(sec_ssid, sec_pass);
+      WiFi.begin(sec_ssid, sec_pass);  // non-blocking on esp32; netUpdate polls status
       last_attempt = now;
     }
     return false;
   }
 
   if (!ota_ready) {
-    ArduinoOTA.begin(WiFi.localIP(), "arduino", ota_password, InternalStorage);
+    ArduinoOTA.setHostname(HOSTNAME);
+    ArduinoOTA.setPassword(ota_password);
+    ArduinoOTA.begin();  // also advertises HOSTNAME.local over mdns
     ota_ready = true;
     Serial.print("wifi up, IP: ");
     Serial.println(WiFi.localIP());
   }
-  ArduinoOTA.poll();
+  ArduinoOTA.handle();
   return true;
 }

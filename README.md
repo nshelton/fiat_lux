@@ -1,29 +1,50 @@
 # fiat lux
 
 LED clock: 32x16 WS2812 matrix (two 16x16 serpentine panels chained left->right),
-driven by an Arduino Nano 33 IoT on pin 2, AHT temp/humidity sensor on I2C.
+driven by an Adafruit ItsyBitsy ESP32, AHT temp/humidity sensor on I2C.
 Power is a 5V 4A supply — the FastLED power cap in `src/config.h` must stay at 3500 mA.
+
+## wiring
+
+Panel data comes off **D5 (GPIO5)**, the ItsyBitsy's level-shifted 5V output —
+output only, which is exactly what it is there for. Put ~330R in series at the
+board end and keep a ground wire paired with the data run.
+
+Feed the 5V supply into the board's **USB pin** rather than powering the board
+separately. That puts the level shifter and the WS2812s on one rail, so the
+0.7 x VDD input threshold tracks the drive level: if the rail sags under load,
+both move together. Powered from `BAT` alone there is no 5V and D5 will not
+shift.
+
+Panel ground and board ground still have to meet at the panel's DIN end — the
+shifter's output swings relative to the board's ground, so that is the
+reference the first pixel measures against.
 
 ## build & flash
 
 ```
 cp include/secrets.example.h include/secrets.h   # fill in wifi creds + your lat/lon
-pio run -e nano_33_iot -t upload                 # over USB (only needed the first time)
-pio run -e ota -t upload                         # over wifi (set upload_port to device IP)
+pio run -e itsybitsy -t upload                   # over USB (only needed the first time)
+pio run -e ota -t upload                         # over wifi (espota, port 3232)
 ```
 
-The device prints its IP on serial (115200 baud) at boot. The OTA password in
-`secrets.h` must match the `curl -u` password in `[env:ota]`.
+The device prints its IP on serial (115200 baud) at boot and advertises itself
+as `fiatlux.local`. The OTA password in `secrets.h` must match `--auth` in
+`[env:ota]`; set `upload_port` to the IP if mDNS does not resolve for you.
 
 Other envs:
 - `usb_safe` — LED power capped at 300 mA. Use whenever the wall supply is
-  unplugged: the panel back-feeds off the Nano's 5V rail, and at full power it
+  unplugged: the panel back-feeds off the board's 5V rail, and at full power it
   browns out the USB port in a reset loop.
+- `panel` — matrix and test patterns only, no wifi linked in. Walks the index
+  chase up a brightness ladder (1, 2, 4 ... 255), announcing each step on
+  serial. Use it to validate the data path in isolation: with no wifi in the
+  build, a glitch here is the 5V line or FastLED's RMT timing and nothing else.
 - `bringup` — blink + serial heartbeat only, for debugging board/cable/USB.
 
 ## control (HTTP, port 80)
 
-Open `http://<device-ip>/` — the device serves its own control page with mode
+Open `http://fiatlux.local/` — the device serves its own control page with mode
 buttons, master brightness and the four animation faders. Two endpoints back it,
 and both are just as usable from curl:
 
@@ -34,7 +55,7 @@ and both are just as usable from curl:
 Modes: `0` clock, `1` wolfram CA, `2` plasma, `3` test patterns, `4` ticker.
 
 ```
-curl "http://192.168.0.222/set?mode=4&bri=120"
+curl "http://fiatlux.local/set?mode=4&bri=120"
 ```
 
 Test patterns (mode 3): fader1 picks index chase / column sweep / row sweep /
@@ -45,10 +66,10 @@ the speed. It rebuilds the string each wrap so it stays current.
 
 ## streaming (UDP, port 8001)
 
-`tools/stream.py <ip>` pushes live frames and runs a plasma demo:
+`tools/stream.py` pushes live frames and runs a plasma demo:
 
 ```
-python3 tools/stream.py 192.168.0.222
+python3 tools/stream.py fiatlux.local
 ```
 
 Packets are `'F' 'L' seq idx_hi idx_lo count flags` + `count` RGB triplets.
@@ -57,31 +78,21 @@ serpentine wiring — and `flags` bit 0 closes a frame, which is what triggers t
 show. Streaming overrides the selected animation; it resumes 1s after the last
 packet.
 
-The header carries its own `count` because WiFiNINA's `parsePacket()` reports
-every byte the NINA has queued for the socket rather than one datagram: frames
-arrive concatenated and can split across reads, so the receiver walks whole
-packets and carries the remainder. It must also never bail with bytes still
-queued — the next `parsePacket()` discards them one at a time while more arrive,
-which starves the render loop and the HTTP server until the panel looks hung.
+Many frames can land between render passes; the receiver drains all of them and
+shows only the last, so a fast sender drops stale frames instead of queueing
+them.
 
 ## known quirks
 
-- **Pixel glitches at low brightness**: the Nano's 3.3V data is marginal against
-  the WS2812 threshold (0.7 x VDD). A heavily loaded supply sags enough to make
-  it clean; a dim display lets the rail float high and sparkles return. Dim it
-  far enough and the first pixel stops hearing the data entirely: the panel
-  latches on its last frame while the Nano keeps running (web page still
-  answers). `MIN_BRIGHTNESS` in `src/config.h` floors the slider above that
-  point; set it to 0 once the 74AHCT125 level shifter (see roadmap) is in.
 - If the board hangs at boot, the serial breadcrumbs (`boot` / `matrix ok` /
   `net ok` / `sensor ok`) show which subsystem is stuck.
-- A flaky micro-USB cable produces disappearing/flapping ports and failed
-  SAM-BA uploads. If the port won't come back, double-tap reset (amber LED
-  pulses = bootloader) and reflash over USB.
+- ESP32 resets when its own rail sags and WiFi transmit pulls ~500 mA peaks, so
+  a marginal supply shows up as a brownout reset rather than a glitchy panel.
 
 ## roadmap
 
-- [ ] 74AHCT125 level shifter between pin 2 and panel DIN (fixes glitches)
 - [ ] inline ~5A fuse on the DC input
+- [x] ItsyBitsy ESP32 port — D5's level shifter fixes the low-brightness
+      glitches the Nano's 3.3V data caused, so `MIN_BRIGHTNESS` is 0
 - [x] UDP frame streaming + `tools/stream.py` for live animation prototyping
 - [x] scrolling text animation

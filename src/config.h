@@ -1,7 +1,11 @@
 #pragma once
 
 // ---- matrix: two 16x16 serpentine panels chained left->right = 32x16 ----
-#define LED_PIN      2
+// Data goes out on D5 (GPIO5), the ItsyBitsy's level-shifted 5V output pin --
+// output only, that is what it is for. Feed the panel supply into the board's
+// USB pin so the shifter and the WS2812s share one rail: the 0.7*VDD input
+// threshold then tracks the drive level instead of racing it.
+#define LED_PIN      5
 #define WIDTH        32
 #define HEIGHT       16
 #define PANEL_WIDTH  16
@@ -16,21 +20,20 @@
 
 #define FRAME_MS     33
 
-// Floor for the brightness slider. Pin 2 drives 3.3V into a 5V panel; dim it
-// enough and the rail floats high, the first pixel stops hearing the data and
-// the panel latches on its last frame while the Nano keeps running. Tune to
-// just above where sparkles start. 0 = off -- set once the 74AHCT125 is in.
-#define MIN_BRIGHTNESS 64
+// Floor for the brightness slider. 0 because D5 drives real 5V logic; the
+// Nano's 3.3V data sat under the WS2812 threshold and needed 64 to stay clean.
+#ifndef MIN_BRIGHTNESS
+#define MIN_BRIGHTNESS 0
+#endif
 
 // ---- network ----
 #define HOSTNAME         "fiatlux"
 #define HTTP_PORT        80
 #define HTTP_TIMEOUT_MS  200
-// US Pacific, DST applied automatically (2nd Sunday Mar - 1st Sunday Nov, 2am).
-// For a zone without DST, set both offsets equal.
-#define TZ_STD_OFFSET    (-8)
-#define TZ_DST_OFFSET    (-7)
-#define NTP_RESYNC_MS    (10UL * 60 * 1000)
+// POSIX TZ, US Pacific. The esp32 sntp client applies the DST rule itself.
+// For a zone without DST, drop everything after the offset ("PST8").
+#define TZ_POSIX         "PST8PDT,M3.2.0,M11.1.0"
+#define NTP_SERVER       "pool.ntp.org"
 #define WEATHER_MS       (10UL * 60 * 1000)
 #define SENSOR_MS        (60UL * 1000)
 
@@ -38,4 +41,5 @@
 #define STREAM_PORT        8001
 #define STREAM_TIMEOUT_MS  1000   // no packets for this long -> local animations resume
 #define STREAM_HEADER      7
-#define STREAM_BUF         1500   // matches WiFiNINA's per-socket buffer
+// count is one byte, so this is the largest a single packet can be
+#define STREAM_BUF         (STREAM_HEADER + 255 * 3)
