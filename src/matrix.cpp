@@ -21,6 +21,11 @@ void setPixel(int x, int y, CRGB col) {
   leds[XY(x, y)] = col;
 }
 
+CRGB getPixel(int x, int y) {
+  if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return CRGB::Black;
+  return leds[XY(x, y)];
+}
+
 // Stream senders address pixels as a raster index with y=0 at the top of their
 // image, which lands at the opposite end of the panel from where the animations
 // put y=0 -- streamed frames came out vertically mirrored against the clock. The

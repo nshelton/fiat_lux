@@ -7,6 +7,7 @@
 #include "http.h"
 #include "stream.h"
 #include "timesync.h"
+#include "transition.h"
 #include "weather.h"
 #include "sensor.h"
 #include "prefs.h"
@@ -41,6 +42,7 @@ void loop() {
   bool streamed = streamUpdate(now, net_up);
   if (streamActive(now)) {
     active = 255;  // re-run begin() when the stream drops and animations resume
+    transitionCancel();
     if (streamed) {
       FastLED.setBrightness(g_brightness);
       FastLED.show();
@@ -54,6 +56,15 @@ void loop() {
 
   uint8_t mode = g_mode < NUM_ANIMS ? g_mode : 0;
   if (mode != active) {
+    // glitch-wipe the old frame out before the new mode draws in
+    if (active != 255) {
+      if (!transitionActive()) transitionStart();
+      if (transitionFrame()) {
+        FastLED.setBrightness(g_brightness);
+        FastLED.show();
+        return;
+      }
+    }
     active = mode;
     anims[active]->begin();
   }

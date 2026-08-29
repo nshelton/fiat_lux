@@ -6,6 +6,7 @@ extern CRGB leds[NUM_LEDS];
 
 void matrixSetup();
 void setPixel(int x, int y, CRGB col);
+CRGB getPixel(int x, int y);
 void setRaster(int idx, CRGB col);  // raster index from a stream sender, y flipped
 void clear(CRGB col = CRGB::Black);
 void putChar(uint8_t c, int x, int y, uint8_t scale, CRGB col);
