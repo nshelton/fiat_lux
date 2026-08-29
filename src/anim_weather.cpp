@@ -6,7 +6,9 @@
 // today's temperature as an xy plot: local midnight to midnight across the 32
 // columns, the day's lo-hi range across the 16 rows. Coloured by temperature
 // rather than the fg/bg settings; hi over lo in the top-left, each in its own
-// temperature's colour, and a short grey bar mid-screen marks now.
+// temperature's colour, and a short grey bar mid-screen marks now. The sky
+// above the line is dark at night and light in the day, blended across the
+// two columns either side of sunrise and sunset.
 
 // piecewise-linear over anchors every 10F from 40 to 100, clamped outside
 static CRGB tempColor(float f) {
@@ -49,6 +51,9 @@ struct WeatherAnim : Animation {
     int now_x = (now_tm.tm_hour * 60 + now_tm.tm_min) * (WIDTH - 1) / (23 * 60);
     if (now_x > WIDTH - 1) now_x = WIDTH - 1;
 
+    const CRGB NIGHT(1, 2, 16), DAY(24, 40, 90);
+    const float colw = 23.0f * 60 / (WIDTH - 1);  // minutes per column
+
     int now_y = 0;
     CRGB now_c;
     for (int x = 0; x < WIDTH; x++) {
@@ -63,6 +68,16 @@ struct WeatherAnim : Animation {
       fill.nscale8(30);
       for (int fy = 0; fy < y; fy++) setPixel(x, fy, fill);
       setPixel(x, y, c);
+
+      CRGB sky = CRGB::Black;
+      if (g_sun_rise >= 0 && g_sun_set >= 0) {
+        float up = ((h * 60 - g_sun_rise) / colw + 2) / 4;
+        float dn = ((g_sun_set - h * 60) / colw + 2) / 4;
+        float d = up < dn ? up : dn;
+        d = d < 0 ? 0 : (d > 1 ? 1 : d);
+        sky = blend(NIGHT, DAY, (uint8_t)(d * 255));
+      }
+      for (int fy = y + 1; fy < HEIGHT; fy++) setPixel(x, fy, sky);
       if (x == now_x) {
         now_y = y;
         now_c = c;
