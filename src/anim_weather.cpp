@@ -5,8 +5,8 @@
 
 // today's temperature as an xy plot: local midnight to midnight across the 32
 // columns, the day's lo-hi range across the 16 rows. Coloured by temperature
-// rather than the fg/bg settings; hi and lo degrees sit in the left corners in
-// their own temperature's colour, and a grey column marks now.
+// rather than the fg/bg settings; hi over lo in the top-left, each in its own
+// temperature's colour, and a short grey bar mid-screen marks now.
 
 // piecewise-linear over anchors every 10F from 40 to 100, clamped outside
 static CRGB tempColor(float f) {
@@ -43,14 +43,14 @@ struct WeatherAnim : Animation {
     }
     int span = hi > lo ? hi - lo : 1;
 
-    // the marker goes down first so the curve overwrites their crossing pixel
     time_t t = time(nullptr);
     struct tm now_tm;
     localtime_r(&t, &now_tm);
     int now_x = (now_tm.tm_hour * 60 + now_tm.tm_min) * (WIDTH - 1) / (23 * 60);
     if (now_x > WIDTH - 1) now_x = WIDTH - 1;
-    for (int y = 0; y < HEIGHT; y++) setPixel(now_x, y, CRGB(70, 70, 70));
 
+    int now_y = 0;
+    CRGB now_c;
     for (int x = 0; x < WIDTH; x++) {
       float h = x * 23.0f / (WIDTH - 1);
       int i = (int)h;
@@ -62,11 +62,20 @@ struct WeatherAnim : Animation {
       fill.nscale8(30);
       for (int fy = 0; fy < y; fy++) setPixel(x, fy, fill);
       setPixel(x, y, c);
+      if (x == now_x) {
+        now_y = y;
+        now_c = c;
+      }
     }
+
+    // now marker: a short grey bar centred mid-screen, the curve keeps its
+    // crossing pixel
+    for (int y = 5; y <= 10; y++) setPixel(now_x, y, CRGB(70, 70, 70));
+    setPixel(now_x, now_y, now_c);
 
     char buf[8];
     writeString(buf, snprintf(buf, sizeof(buf), "%d", hi), 0, 13, tempColor(hi));
-    writeString(buf, snprintf(buf, sizeof(buf), "%d", lo), 0, 0, tempColor(lo));
+    writeString(buf, snprintf(buf, sizeof(buf), "%d", lo), 0, 9, tempColor(lo));
   }
 };
 

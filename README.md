@@ -106,8 +106,8 @@ sets the speed. It rebuilds the string each wrap so it stays current.
 
 Weather (mode 5) plots today's hourly forecast from open-meteo as an xy graph:
 local midnight to midnight across the 32 columns, the day's lo-hi range across
-the 16 rows, with the hi and lo in the left corners and a grey column marking
-now. The curve is coloured by temperature — 50F blue, 60 green, 70 yellow,
+the 16 rows, with the hi stacked over the lo in the top-left and a short grey
+bar mid-screen marking now. The curve is coloured by temperature — 50F blue, 60 green, 70 yellow,
 80 orange, 90 red, darkening past 100 — blended between anchors, so the day
 sweeps through the scale. Shows `--` until the first fetch lands.
 
