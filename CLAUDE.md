@@ -79,7 +79,8 @@ ping → it is off or off-network.
 - `param()` clamps to 0-255; `paramHex()` takes exactly six hex digits or
   returns -1. Colours travel without a `#` — a `#` in a URL starts a fragment
   and never reaches the device.
-- The control page repolls `/state` for the readings but applies **only** `j.t`.
-  Assigning the whole response would yank a slider or picker back mid-drag.
+- The control page repolls `/state` and renders every field in the readout,
+  but **never assigns into `s`** — doing so would yank a slider or picker back
+  mid-drag.
 - FastLED + wifi on ESP32 can flicker via RMT contention. If it appears,
   `-DFASTLED_RMT_MAX_CHANNELS=1` or the I2S driver, not the data path.

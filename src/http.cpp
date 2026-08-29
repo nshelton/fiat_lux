@@ -16,8 +16,6 @@ main{max-width:380px;margin:0 auto}
 h1{font-size:13px;letter-spacing:.25em;text-transform:uppercase;color:#7a7a7a;margin:0 0 20px}
 h2{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:#5a5a5a;margin:0 0 10px;font-weight:400}
 #modes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:26px}
-#pats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:8px;margin-bottom:10px}
-canvas{width:100%;image-rendering:pixelated;border-radius:6px;background:#000;display:block;margin-bottom:26px}
 button{background:#161618;color:#bdbdbd;border:1px solid #2a2a2e;border-radius:6px;padding:11px;font:inherit;cursor:pointer}
 button.on{background:#e8e6e3;color:#0b0b0c;border-color:#e8e6e3}
 #env{display:grid;grid-template-columns:auto 1fr 1fr;gap:3px 14px;font-size:13px;color:#7a7a7a;margin-bottom:22px}
@@ -34,14 +32,11 @@ input{width:100%;accent-color:#e8e6e3}
 <h2>color</h2><div id=cols>
 <label><span>foreground</span><input type=color id=cfg></label>
 <label><span>background</span><input type=color id=cbg></label></div>
-<h2>stream</h2><div id=pats></div><canvas id=cv width=32 height=16></canvas>
 <div id=faders></div></main>
 <script>
 const M=['clock','wolfram','plasma','test','ticker','weather'],
-F=['brightness','fader'],
-P=['off','plasma','rainbow','ripple','fire','bounce','white','black'],
-W=32,H=16,N=W*H;
-let s={mode:0,v:[200,128],fg:'ffffff',bg:'000000'},dirty=false,busy=false;
+F=['brightness','fader'];
+let s={mode:0,v:[200,128],fg:'ffffff',bg:'000000',t:[-1,-1,-1,-1],heap:0},dirty=false,busy=false;
 cfg.oninput=()=>{s.fg=cfg.value.slice(1);dirty=true};
 cbg.oninput=()=>{s.bg=cbg.value.slice(1);dirty=true};
 M.forEach((n,i)=>{let b=document.createElement('button');b.textContent=n;
@@ -56,50 +51,17 @@ cfg.value='#'+s.fg;cbg.value='#'+s.bg}
 setInterval(async()=>{if(!dirty||busy)return;dirty=false;busy=true;
 try{await fetch('/set?mode='+s.mode+'&bri='+s.v[0]+'&f1='+s.v[1]+'&fg='+s.fg+'&bg='+s.bg)}catch(e){}
 busy=false},120);
-function drawEnv(t){let f=v=>v<0?'--':v;
+function drawState(j){let f=v=>v<0?'--':v,t=j.t;
 env.innerHTML='<span>out</span><b>'+f(t[0])+'&deg;F</b><b>'+f(t[1])+'%</b>'+
-'<span>in</span><b>'+f(t[2])+'&deg;F</b><b>'+f(t[3])+'%</b>'}
-drawEnv([-1,-1,-1,-1]);
-fetch('/state').then(r=>r.json()).then(j=>{s=j;draw();drawEnv(j.t)});draw();
-// readings only -- assigning the whole state here would fight a drag in progress
-setInterval(()=>fetch('/state').then(r=>r.json()).then(j=>drawEnv(j.t)).catch(e=>{}),10000);
-
-// ---- streaming: render a frame here, POST the raw 1536 bytes to /frame ----
-// a pattern fills f[] with RGB triplets at (y*W+x)*3, same contract as tools/stream.py
-let fb=new Uint8Array(N*3),heat=new Uint8Array(N),pat=0,t0=Date.now();
-const ctx=cv.getContext('2d'),img=ctx.createImageData(W,H);
-const PAT={
-plasma:(f,t)=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-let v=Math.sin(x/3+t)+Math.sin(y/2-t)+Math.sin((x+y)/4+t/2),i=(y*W+x)*3;
-f[i]=127+127*Math.sin(v*1.5);f[i+1]=127+127*Math.sin(v*1.5+2.1);f[i+2]=127+127*Math.sin(v*1.5+4.2)}},
-rainbow:(f,t)=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let h=(x+y)/24-t/2,i=(y*W+x)*3;
-for(let c=0;c<3;c++)f[i+c]=127+127*Math.sin(2*Math.PI*(h+c/3))}},
-ripple:(f,t)=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-let d=Math.hypot(x-15.5,(y-7.5)*1.6),v=Math.sin(d/1.5-t*3)/(1+d/6),i=(y*W+x)*3;
-f[i]=Math.max(0,v)*255;f[i+1]=Math.abs(v)*90;f[i+2]=Math.max(0,-v)*255}},
-fire:f=>{for(let x=0;x<W;x++)heat[(H-1)*W+x]=150+Math.random()*105;
-for(let y=0;y<H-1;y++)for(let x=0;x<W;x++){let b=(y+1)*W;
-heat[y*W+x]=Math.max(0,((heat[b+x]*2+heat[b+Math.max(0,x-1)]+heat[b+Math.min(W-1,x+1)])>>2)-14)}
-for(let p=0;p<N;p++){let h=heat[p],i=p*3;
-f[i]=Math.min(255,h*2);f[i+1]=Math.min(255,Math.max(0,(h-96)*2));f[i+2]=Math.min(255,Math.max(0,(h-192)*4))}},
-bounce:(f,t)=>{for(let i=0;i<N*3;i++)f[i]=f[i]*3/4;
-let x=Math.round((W-1)*(.5+.5*Math.sin(t*1.7))),y=Math.round((H-1)*(.5+.5*Math.sin(t*2.3))),i=(y*W+x)*3;
-f[i]=255;f[i+1]=200;f[i+2]=60},
-// stress test: held, not one-shot -- the pump keeps posting so the panel stays
-// put instead of falling back to the animation. 'off' is what stops sending.
-white:f=>f.fill(255),
-black:f=>f.fill(0)};
-P.forEach((n,i)=>{let b=document.createElement('button');b.textContent=n;
-b.onclick=()=>{pat=i;drawPats()};pats.append(b)});
-function drawPats(){[...pats.children].forEach((b,i)=>b.className=i==pat?'on':'')}
-drawPats();
-// awaiting the POST is the backpressure: never more than one frame in flight
-(async()=>{for(;;){
-if(pat){PAT[P[pat]](fb,(Date.now()-t0)/1000);
-for(let i=0;i<N;i++){img.data[i*4]=fb[i*3];img.data[i*4+1]=fb[i*3+1];img.data[i*4+2]=fb[i*3+2];img.data[i*4+3]=255}
-ctx.putImageData(img,0,0);
-try{await fetch('/frame',{method:'POST',body:fb})}catch(e){}}
-await new Promise(r=>setTimeout(r,pat?25:250))}})();
+'<span>in</span><b>'+f(t[2])+'&deg;F</b><b>'+f(t[3])+'%</b>'+
+'<span>mode</span><b>'+M[j.mode]+'</b><b></b>'+
+'<span>bri/fader</span><b>'+j.v[0]+'</b><b>'+j.v[1]+'</b>'+
+'<span>fg/bg</span><b>#'+j.fg+'</b><b>#'+j.bg+'</b>'+
+'<span>heap</span><b>'+(j.heap?(j.heap/1024).toFixed(1)+'k':'--')+'</b><b></b>'}
+drawState(s);
+fetch('/state').then(r=>r.json()).then(j=>{s=j;draw();drawState(j)});draw();
+// display only -- assigning into s here would fight a drag in progress
+setInterval(()=>fetch('/state').then(r=>r.json()).then(j=>drawState(j)).catch(e=>{}),10000);
 </script>)HTML";
 
 static void sendBody(WiFiClient& c, const char* type, const char* body, size_t len) {
@@ -116,10 +78,11 @@ static void sendState(WiFiClient& c) {
   char body[160];
   int n = snprintf(body, sizeof(body),
                    "{\"mode\":%u,\"v\":[%u,%u],\"fg\":\"%06lx\",\"bg\":\"%06lx\","
-                   "\"t\":[%d,%d,%d,%d]}",
+                   "\"t\":[%d,%d,%d,%d],\"heap\":%u}",
                    g_mode, g_brightness, g_fader,
                    (unsigned long)g_fg, (unsigned long)g_bg,
-                   g_weather_temp, g_weather_humidity, g_sensor_temp, g_sensor_humidity);
+                   g_weather_temp, g_weather_humidity, g_sensor_temp, g_sensor_humidity,
+                   (unsigned)ESP.getFreeHeap());
   sendBody(c, "application/json", body, n);
 }
 
@@ -127,7 +90,7 @@ static void sendState(WiFiClient& c) {
 // Content-Length to parse -- read exactly that many bytes or drop it. One
 // deadline for the whole body, not per chunk: a client dripping a byte at a
 // time would otherwise hold the loop open and starve the render. A dropped
-// frame costs nothing, the next one is 25ms behind it.
+// frame costs nothing, the next one is a frame time behind it.
 static void recvFrame(WiFiClient& c) {
   static uint8_t body[NUM_LEDS * 3];
   size_t n = 0;

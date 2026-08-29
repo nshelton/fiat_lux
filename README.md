@@ -51,18 +51,21 @@ Other envs:
 ## control (HTTP, port 80)
 
 Open `http://fiatlux.local/` — the device serves its own control page with the
-outdoor and indoor readings across the top, mode buttons, colour pickers,
-streaming, and the brightness and fader sliders.
+outdoor and indoor readings across the top, mode buttons, colour pickers, and
+the brightness and fader sliders.
 
 The readings live on the page rather than the panel: four numbers squeezed onto
 one 32px row were never legible, and the clock has the space to itself now. The
-page repolls `/state` every 10s and applies only `t` from it — taking the whole
-object would yank a slider or picker back mid-drag. `-1` shows as `--`, which is
-what weather and the sensor report before their first successful read.
+page repolls `/state` every 10s and renders every field in the readout, but
+never assigns into the control state — that would yank a slider or picker back
+mid-drag. `-1` shows as `--`, which is what weather and the sensor report
+before their first successful read.
 
 Two endpoints back the page, and both are just as usable from curl:
 
-- `GET /state` → `{"mode":N,"v":[bri,f1],"fg":"rrggbb","bg":"rrggbb","t":[...]}`
+- `GET /state` → `{"mode":N,"v":[bri,f1],"fg":"rrggbb","bg":"rrggbb","t":[...],"heap":N}`
+  (`heap` is the free heap in bytes, read live — a number drifting down over
+  days is a leak)
 - `GET /set?mode=N&bri=N&f1=N&fg=rrggbb&bg=rrggbb` → the same JSON. Every param
   is optional, the numeric ones clamp to 0-255, so you can send just the one you
   care about.
@@ -133,36 +136,14 @@ Many frames can land between render passes; the receiver drains all of them and
 shows only the last, so a fast sender drops stale frames instead of queueing
 them.
 
-### from the browser
+### over HTTP
 
-Browsers cannot open a UDP socket, so the control page renders patterns itself
-and POSTs whole frames instead:
+For senders without a UDP socket there is an HTTP equivalent:
 
 - `POST /frame` — body is exactly `32 * 16 * 3` = 1536 raw RGB bytes in raster
   order, same layout the UDP path uses. No Content-Length parsing: the body is
   always a full frame, so the handler reads that many bytes or drops it. Replies
-  `204`.
-
-The `stream` row on the page picks a pattern; `off` stops sending and the panel
-falls back to its animation after the usual 1s. `white` and `black` are the
-stress-test pair -- both are *held* (the pump keeps posting), so strobe between
-those two rather than between `white` and `off`. Note `white` is still subject
-to `MAX_POWER_MA`, so it measures the FastLED limiter's ceiling, not 512 LEDs at
-full tilt; brightness applies too, so push the slider to 255 first.
-
-The canvas below the buttons is a live preview of what is being sent, so the
-page is useful without line of sight to the panel.
-
-Adding a pattern there is a function and a `PAT` entry in `src/http.cpp`, same
-contract as `tools/stream.py` — fill `f[(y * W + x) * 3]` with RGB. State
-between frames is fine (`fire` keeps a heat buffer; `bounce` scales the previous
-frame down instead of clearing, which is where its trail comes from).
-
-Awaiting each POST is the backpressure — never more than one frame in flight, so
-a slow link degrades the frame rate instead of queueing up latency. A connection
-per frame sounds wasteful but measures ~34 fps on a quiet LAN, comfortably above
-the 30 fps the UDP sender targets, so it was not worth keeping connections alive
-or adding a websocket library.
+  `204`. Same override and 1s-fallback behaviour as UDP.
 
 ## known quirks
 
@@ -187,7 +168,7 @@ or adding a websocket library.
 - [x] ItsyBitsy ESP32 port — D5's level shifter fixes the low-brightness
       glitches the Nano's 3.3V data caused; the brightness floor that worked
       around them is gone and the slider runs to 0
-- [x] frame streaming — UDP from `tools/stream.py`, HTTP from the control page
+- [x] frame streaming — UDP from `tools/stream.py`, HTTP via `POST /frame`
 - [x] one foreground / one background colour, persisted to NVS
 - [x] temp + humidity readouts moved off the panel onto the control page
 - [x] scrolling text animation
