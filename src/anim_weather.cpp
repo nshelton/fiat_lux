@@ -7,7 +7,8 @@
 // 32 columns, the day's lo-hi range across the 16 rows. Weather draws the
 // temperature, humidity the relative humidity — same graph, different colour
 // ramp. Hi over lo in the top-left, the current reading top-right, each in its
-// own value's colour, and a white pixel on the curve marks now. The sky above
+// own value's colour, and a full-height grey column with a white pixel on the
+// curve marks now. The sky above
 // the line is dark at night and light in the day, blended across the two
 // columns either side of sunrise and sunset.
 
@@ -98,7 +99,9 @@ static void drawGraph(const int* hourly, int current, CRGB (*color)(float)) {
     if (x == now_x) now_y = y;
   }
 
-  setPixel(now_x, now_y, CRGB::White);  // now
+  // now: a grey column over everything, white where it crosses the curve
+  for (int y = 0; y < HEIGHT; y++) setPixel(now_x, y, CRGB(60, 60, 60));
+  setPixel(now_x, now_y, CRGB::White);
 
   char buf[8];
   writeString(buf, snprintf(buf, sizeof(buf), "%d", hi), 0, 13, color(hi));

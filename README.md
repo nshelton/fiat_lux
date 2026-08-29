@@ -109,8 +109,9 @@ sets the speed. It rebuilds the string each wrap so it stays current.
 
 Weather (mode 5) plots today's hourly forecast from open-meteo as an xy graph:
 local midnight to midnight across the 32 columns, the day's lo-hi range across
-the 16 rows, with the hi stacked over the lo in the top-left and a white pixel
-on the curve marking now. The sky above the line is black at night and dim
+the 16 rows, with the hi stacked over the lo in the top-left, the current
+reading top-right, and a full-height grey column marking now — white where it
+crosses the curve. The sky above the line is black at night and dim
 white in the day, fading across the two columns either side of sunrise and
 sunset. The curve is coloured by temperature — 50F blue, 60 green, 70 yellow,
 80 orange, 90 red, darkening past 100 — blended between anchors, so the day
