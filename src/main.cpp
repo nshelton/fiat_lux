@@ -71,5 +71,6 @@ void loop() {
 
   FastLED.setBrightness(g_brightness);
   anims[active]->frame(now);
+  transitionPost();
   FastLED.show();
 }
