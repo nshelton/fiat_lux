@@ -5,8 +5,9 @@
 
 // today's temperature as an xy plot: local midnight to midnight across the 32
 // columns, the day's lo-hi range across the 16 rows. Coloured by temperature
-// rather than the fg/bg settings; hi over lo in the top-left, each in its own
-// temperature's colour, and a white pixel on the curve marks now. The sky
+// rather than the fg/bg settings; hi over lo in the top-left, the current temp
+// top-right, each in its own temperature's colour, and a white pixel on the
+// curve marks now. The sky
 // above the line is dark at night and light in the day, blended across the
 // two columns either side of sunrise and sunset.
 
@@ -87,6 +88,8 @@ struct WeatherAnim : Animation {
     char buf[8];
     writeString(buf, snprintf(buf, sizeof(buf), "%d", hi), 0, 13, tempColor(hi));
     writeString(buf, snprintf(buf, sizeof(buf), "%d", lo), 0, 9, tempColor(lo));
+    int n = snprintf(buf, sizeof(buf), "%d", g_weather_temp);
+    writeString(buf, n, WIDTH - (n * 4 - 1), 13, tempColor(g_weather_temp));
   }
 };
 
