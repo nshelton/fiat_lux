@@ -6,7 +6,7 @@
 // today's temperature as an xy plot: local midnight to midnight across the 32
 // columns, the day's lo-hi range across the 16 rows. Coloured by temperature
 // rather than the fg/bg settings; hi over lo in the top-left, each in its own
-// temperature's colour, and a short grey bar mid-screen marks now. The sky
+// temperature's colour, and a white pixel on the curve marks now. The sky
 // above the line is dark at night and light in the day, blended across the
 // two columns either side of sunrise and sunset.
 
@@ -55,7 +55,6 @@ struct WeatherAnim : Animation {
     const float colw = 23.0f * 60 / (WIDTH - 1);  // minutes per column
 
     int now_y = 0;
-    CRGB now_c;
     for (int x = 0; x < WIDTH; x++) {
       float h = x * 23.0f / (WIDTH - 1);
       int i = (int)h;
@@ -78,16 +77,10 @@ struct WeatherAnim : Animation {
         sky = blend(NIGHT, DAY, (uint8_t)(d * 255));
       }
       for (int fy = y + 1; fy < HEIGHT; fy++) setPixel(x, fy, sky);
-      if (x == now_x) {
-        now_y = y;
-        now_c = c;
-      }
+      if (x == now_x) now_y = y;
     }
 
-    // now marker: a short grey bar centred mid-screen, the curve keeps its
-    // crossing pixel
-    for (int y = 5; y <= 10; y++) setPixel(now_x, y, CRGB(70, 70, 70));
-    setPixel(now_x, now_y, now_c);
+    setPixel(now_x, now_y, CRGB::White);  // now
 
     char buf[8];
     writeString(buf, snprintf(buf, sizeof(buf), "%d", hi), 0, 13, tempColor(hi));
