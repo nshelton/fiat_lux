@@ -56,7 +56,8 @@ struct WeatherAnim : Animation {
       int i = (int)h;
       float temp = g_weather_hourly[i];
       if (i < 23) temp += (g_weather_hourly[i + 1] - g_weather_hourly[i]) * (h - i);
-      int y = lroundf((HEIGHT - 1) * (temp - lo) / span);  // animation y=0 is the bottom
+      // animation y=0 is the bottom; 1px margin keeps the line off both edges
+      int y = 1 + lroundf((HEIGHT - 3) * (temp - lo) / span);
       CRGB c = tempColor(temp);
       CRGB fill = c;
       fill.nscale8(30);
