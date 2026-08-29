@@ -41,20 +41,42 @@ bool transitionFrame() {
     return false;
   }
 
+  // supply sag kills blue first, then green: whites go amber, then ember
+  uint8_t sag = 255 - frame * 20;
+  uint8_t bsag = scale8(sag, sag);
+
   for (int y = 0; y < HEIGHT; y++) {
     int off = speed[y] * frame;
-    for (int x = 0; x < WIDTH; x++)
-      setPixel(x, y, x + off < WIDTH ? buf[y][x + off] : CRGB::Black);
+    for (int x = 0; x < WIDTH; x++) {
+      CRGB c = x + off < WIDTH ? buf[y][x + off] : CRGB::Black;
+      c.g = scale8(c.g, sag);
+      c.b = scale8(c.b, bsag);
+      setPixel(x, y, c);
+    }
   }
 
-  // each block ramps up then back down over 8 frames
+  // each block ramps up then back down over 8 frames, sagging like the rest
   for (Block& b : blocks) {
     int t = frame - b.start;
     if (t < 0 || t >= 8) continue;
     uint8_t v = (t < 4 ? t + 1 : 8 - t) * 50;
+    CRGB c(v, scale8(v, sag), scale8(v, bsag));
     for (int y = b.y; y < b.y + b.h; y++)
-      for (int x = b.x; x < b.x + b.w; x++) setPixel(x, y, CRGB(v, v, v));
+      for (int x = b.x; x < b.x + b.w; x++) setPixel(x, y, c);
   }
+
+  // a corrupt bit shifts everything downstream of it, and leds[] is chain
+  // order, so the smear zigzags along the serpentine like a starved panel
+  if (random8() < 60 + frame * 12) {
+    int len = 8 + random8(32);
+    int shift = 1 + random8(3);
+    int start = random16(NUM_LEDS - len - shift);
+    memmove(&leds[start], &leds[start + shift], len * sizeof(CRGB));
+  }
+
+  // pixels latching one frame of garbage, more as the brownout deepens
+  for (int n = random8(2 + frame); n > 0; n--)
+    leds[random16(NUM_LEDS)] = CHSV(random8(), 255, 255);
 
   frame++;
   return true;
