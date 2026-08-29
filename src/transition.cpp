@@ -2,11 +2,12 @@
 #include "matrix.h"
 
 // glitch wipe between modes, two phases. Out: the old frame's rows slide off
-// the left edge at random speeds while grey blocks flash and the panel
-// "browns out" -- blue dies first, then green, smears follow the serpentine,
-// pixels latch garbage. In: the new mode renders normally and the same
-// corruption is applied on top of it, heavy at first, healing to clean --
-// the scene condenses out of the noise, still drifting leftward into place.
+// the left edge at random speeds while the panel "browns out" -- blue dies
+// first, green next, red lingers -- and random colour blocks (some inverting
+// what is under them) flash up, drift left and fade. Smears follow the
+// serpentine, pixels latch garbage. In: the new mode renders normally and the
+// same corruption is applied on top, heavy at first, healing to clean -- the
+// scene condenses out of the noise red-first, still drifting leftward.
 
 #define T_OUT 12
 #define T_IN  10
@@ -17,9 +18,11 @@ static int frame = -1;         // out-phase counter, -1 = idle
 static int in = 0;             // in-phase intensity, counts down to 0
 
 struct Block {
-  uint8_t x, y, w, h, start;
+  uint8_t x, y, w, h, start, spd;
+  CRGB col;
+  bool inv;  // invert what is underneath instead of painting col
 };
-static Block blocks[5];
+static Block blocks[9];
 
 void transitionStart() {
   for (int y = 0; y < HEIGHT; y++) {
@@ -32,6 +35,9 @@ void transitionStart() {
     b.x = random8(WIDTH - b.w);
     b.y = random8(HEIGHT - b.h);
     b.start = random8(4);
+    b.spd = 2 + random8(4);
+    b.col = CHSV(random8(), 255, 255);
+    b.inv = random8() < 90;
   }
   frame = 0;
   in = 0;
@@ -44,10 +50,25 @@ void transitionCancel() {
   in = 0;
 }
 
+// per-channel supply sag: blue's forward voltage gives out first, then
+// green, red hangs on to the end
+static uint8_t sagLevel(int level, int rate) {
+  int v = 255 - level * rate;
+  return v < 0 ? 0 : v;
+}
+
+static void sagPixel(CRGB& c, uint8_t rs, uint8_t gs, uint8_t bs) {
+  c.r = scale8(c.r, rs);
+  c.g = scale8(c.g, gs);
+  c.b = scale8(c.b, bs);
+}
+
 // a corrupt bit shifts everything downstream of it, and leds[] is chain
-// order, so the smear zigzags along the serpentine like a starved panel
+// order, so the smear zigzags along the serpentine like a starved panel.
+// The artifacts run at full voltage -- sag is for the dying content.
 static void corrupt(uint8_t smear_chance, uint8_t sparkles) {
-  if (random8() < smear_chance) {
+  for (int s = 0; s < 2; s++) {
+    if (random8() >= smear_chance) continue;
     int len = 8 + random8(32);
     int shift = 1 + random8(3);
     int start = random16(NUM_LEDS - len - shift);
@@ -65,31 +86,37 @@ bool transitionFrame() {
     return false;
   }
 
-  // supply sag kills blue first, then green: whites go amber, then ember
-  uint8_t sag = 255 - frame * 20;
-  uint8_t bsag = scale8(sag, sag);
+  uint8_t rs = sagLevel(frame, 8), gs = sagLevel(frame, 28), bs = sagLevel(frame, 52);
 
   for (int y = 0; y < HEIGHT; y++) {
     int off = speed[y] * frame;
     for (int x = 0; x < WIDTH; x++) {
       CRGB c = x + off < WIDTH ? buf[y][x + off] : CRGB::Black;
-      c.g = scale8(c.g, sag);
-      c.b = scale8(c.b, bsag);
+      sagPixel(c, rs, gs, bs);
       setPixel(x, y, c);
     }
   }
 
-  // each block ramps up then back down over 8 frames, sagging like the rest
+  // blocks flash up then down over 8 frames while drifting left with the rest
   for (Block& b : blocks) {
     int t = frame - b.start;
     if (t < 0 || t >= 8) continue;
     uint8_t v = (t < 4 ? t + 1 : 8 - t) * 50;
-    CRGB c(v, scale8(v, sag), scale8(v, bsag));
+    int bx = b.x - t * b.spd;
     for (int y = b.y; y < b.y + b.h; y++)
-      for (int x = b.x; x < b.x + b.w; x++) setPixel(x, y, c);
+      for (int x = bx; x < bx + b.w; x++) {
+        if (b.inv) {
+          CRGB c = getPixel(x, y);
+          setPixel(x, y, blend(c, CRGB(255 - c.r, 255 - c.g, 255 - c.b), v));
+        } else {
+          CRGB c = b.col;
+          c.nscale8(v);
+          setPixel(x, y, c);
+        }
+      }
   }
 
-  corrupt(60 + frame * 12, 2 + frame);
+  corrupt(90 + frame * 14, 5 + frame * 2);
 
   frame++;
   return true;
@@ -99,8 +126,7 @@ bool transitionFrame() {
 void transitionPost() {
   if (in <= 0) return;
 
-  uint8_t sag = 255 - in * 20;
-  uint8_t bsag = scale8(sag, sag);
+  uint8_t rs = sagLevel(in, 8), gs = sagLevel(in, 28), bs = sagLevel(in, 52);
 
   // rows arrive displaced right and settle leftward into place, the same
   // direction everything left by
@@ -108,13 +134,12 @@ void transitionPost() {
     int off = speed[y] * in / 2;
     for (int x = WIDTH - 1; x >= 0; x--) {
       CRGB c = x - off >= 0 ? getPixel(x - off, y) : CRGB::Black;
-      c.g = scale8(c.g, sag);
-      c.b = scale8(c.b, bsag);
+      sagPixel(c, rs, gs, bs);
       setPixel(x, y, c);
     }
   }
 
-  corrupt(40 + in * 15, 1 + in);
+  corrupt(60 + in * 16, 3 + in * 2);
 
   in--;
 }
