@@ -3,11 +3,17 @@
 
 // glitch wipe between modes, two phases. Out: the old frame's rows slide off
 // the left edge at random speeds while the panel "browns out" -- blue dies
-// first, green next, red lingers -- and random colour blocks (some inverting
-// what is under them) flash up, drift left and fade. Smears follow the
-// serpentine, pixels latch garbage. In: the new mode renders normally and the
-// same corruption is applied on top, heavy at first, healing to clean -- the
-// scene condenses out of the noise red-first, still drifting leftward.
+// first, green next, red lingers -- and colour blocks (some inverting what is
+// under them) flash up, drift left and fade. Smears follow the serpentine,
+// pixels latch garbage. In: the new mode renders normally and the same
+// corruption is applied on top, healing to clean over ten frames.
+//
+// All of it feeds on the content actually there: sparkles latch at the target
+// pixel's own brightness (black stays black), smears shift dark onto dark
+// invisibly, and blocks -- their count scaled by the outgoing frame's energy
+// -- spawn centred on lit pixels and take their brightness from them. A full
+// white screen dies violently; a lone ticker stripe just crackles around
+// itself.
 
 #define T_OUT 12
 #define T_IN  10
@@ -24,20 +30,41 @@ struct Block {
 };
 static Block blocks[9];
 
+static uint8_t maxc(const CRGB& c) {
+  uint8_t m = c.r > c.g ? c.r : c.g;
+  return m > c.b ? m : c.b;
+}
+
 void transitionStart() {
+  uint32_t e = 0;
   for (int y = 0; y < HEIGHT; y++) {
-    for (int x = 0; x < WIDTH; x++) buf[y][x] = getPixel(x, y);
+    for (int x = 0; x < WIDTH; x++) {
+      buf[y][x] = getPixel(x, y);
+      e += maxc(buf[y][x]);
+    }
     speed[y] = 3 + random8(4);
   }
-  for (Block& b : blocks) {
-    b.w = 3 + random8(6);
-    b.h = 2 + random8(4);
-    b.x = random8(WIDTH - b.w);
-    b.y = random8(HEIGHT - b.h);
-    b.start = random8(4);
-    b.spd = 2 + random8(4);
-    b.col = CHSV(random8(), 255, 255);
-    b.inv = random8() < 90;
+  uint8_t energy = e / NUM_LEDS;
+
+  int nb = 2 + energy * 8 / 256;
+  for (int i = 0; i < (int)(sizeof(blocks) / sizeof(blocks[0])); i++) {
+    Block& b = blocks[i];
+    b.start = 255;  // disabled unless a lit spawn point turns up
+    if (i >= nb) continue;
+    for (int tries = 0; tries < 8; tries++) {
+      uint8_t x = random8(WIDTH), y = random8(HEIGHT);
+      uint8_t v = maxc(buf[y][x]);
+      if (v < 40) continue;
+      b.w = 3 + random8(6);
+      b.h = 2 + random8(4);
+      b.x = x > b.w / 2 ? (x - b.w / 2 + b.w > WIDTH ? WIDTH - b.w : x - b.w / 2) : 0;
+      b.y = y > b.h / 2 ? (y - b.h / 2 + b.h > HEIGHT ? HEIGHT - b.h : y - b.h / 2) : 0;
+      b.start = random8(4);
+      b.spd = 2 + random8(4);
+      b.col = CHSV(random8(), 255, v);
+      b.inv = random8() < 90;
+      break;
+    }
   }
   frame = 0;
   in = 0;
@@ -65,7 +92,8 @@ static void sagPixel(CRGB& c, uint8_t rs, uint8_t gs, uint8_t bs) {
 
 // a corrupt bit shifts everything downstream of it, and leds[] is chain
 // order, so the smear zigzags along the serpentine like a starved panel.
-// The artifacts run at full voltage -- sag is for the dying content.
+// Sparkles latch garbage at the victim pixel's own brightness, so the
+// chaos lives where the content is and dark stays dark.
 static void corrupt(uint8_t smear_chance, uint8_t sparkles) {
   for (int s = 0; s < 2; s++) {
     if (random8() >= smear_chance) continue;
@@ -74,8 +102,10 @@ static void corrupt(uint8_t smear_chance, uint8_t sparkles) {
     int start = random16(NUM_LEDS - len - shift);
     memmove(&leds[start], &leds[start + shift], len * sizeof(CRGB));
   }
-  for (int n = random8(sparkles); n > 0; n--)
-    leds[random16(NUM_LEDS)] = CHSV(random8(), 255, 255);
+  for (int n = random8(sparkles); n > 0; n--) {
+    int i = random16(NUM_LEDS);
+    leds[i] = CHSV(random8(), 255, maxc(leds[i]));
+  }
 }
 
 bool transitionFrame() {
@@ -116,7 +146,7 @@ bool transitionFrame() {
       }
   }
 
-  corrupt(90 + frame * 14, 5 + frame * 2);
+  corrupt(90 + frame * 14, 8 + frame * 2);
 
   frame++;
   return true;
@@ -139,7 +169,7 @@ void transitionPost() {
     }
   }
 
-  corrupt(60 + in * 16, 3 + in * 2);
+  corrupt(60 + in * 16, 6 + in * 2);
 
   in--;
 }
