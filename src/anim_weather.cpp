@@ -51,7 +51,7 @@ struct WeatherAnim : Animation {
     int now_x = (now_tm.tm_hour * 60 + now_tm.tm_min) * (WIDTH - 1) / (23 * 60);
     if (now_x > WIDTH - 1) now_x = WIDTH - 1;
 
-    const CRGB NIGHT(0, 0, 0), DAY(26, 26, 26);
+    const CRGB NIGHT(0, 0, 0), DAY(3, 3, 3);
     const float colw = 23.0f * 60 / (WIDTH - 1);  // minutes per column
 
     int now_y = 0;
