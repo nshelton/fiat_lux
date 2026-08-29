@@ -80,10 +80,10 @@ curl "http://fiatlux.local/set?fg=ff8800&bg=001020"
 ```
 
 The two pickers set one foreground and one background, used by the clock, the
-ticker and the wolfram CA (live cells are `fg`, the rest `bg`). Plasma and the
-test patterns keep their own colours: plasma *is* a colour field with no
-foreground in it, and the test pattern's red pixel 0 is how you find the start
-of the chain.
+ticker and the wolfram CA (live cells are `fg`, the rest `bg`). Plasma, the
+weather plot and the test patterns keep their own colours: plasma *is* a colour
+field with no foreground in it, weather is coloured by temperature, and the
+test pattern's red pixel 0 is how you find the start of the chain.
 
 They persist to NVS. The picker streams a new colour on every mouse move and NVS
 has finite erase cycles, so `prefsUpdate()` only writes once a colour has held
@@ -91,7 +91,8 @@ still for `PREFS_SETTLE_MS` — drag freely, one write lands when you settle, an
 `colors saved` appears on serial. `prefsLoad()` runs before `matrixSetup()`, so
 the first frame after a reboot is already the right colour.
 
-Modes: `0` clock, `1` wolfram CA, `2` plasma, `3` test patterns, `4` ticker.
+Modes: `0` clock, `1` wolfram CA, `2` plasma, `3` test patterns, `4` ticker,
+`5` weather.
 
 ```
 curl "http://fiatlux.local/set?mode=4&bri=120"
@@ -102,6 +103,13 @@ solid white ramp for verifying panel wiring and the power cap.
 
 The ticker (mode 4) scrolls time, date and both temp/humidity pairs; the fader
 sets the speed. It rebuilds the string each wrap so it stays current.
+
+Weather (mode 5) plots today's hourly forecast from open-meteo as an xy graph:
+local midnight to midnight across the 32 columns, the day's lo-hi range across
+the 16 rows, with the hi and lo in the left corners and a grey column marking
+now. The curve is coloured by temperature — 50F blue, 60 green, 70 yellow,
+80 orange, 90 red, darkening past 100 — blended between anchors, so the day
+sweeps through the scale. Shows `--` until the first fetch lands.
 
 ## streaming (UDP, port 8001)
 

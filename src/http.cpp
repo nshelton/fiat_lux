@@ -37,7 +37,7 @@ input{width:100%;accent-color:#e8e6e3}
 <h2>stream</h2><div id=pats></div><canvas id=cv width=32 height=16></canvas>
 <div id=faders></div></main>
 <script>
-const M=['clock','wolfram','plasma','test','ticker'],
+const M=['clock','wolfram','plasma','test','ticker','weather'],
 F=['brightness','fader'],
 P=['off','plasma','rainbow','ripple','fire','bounce','white','black'],
 W=32,H=16,N=W*H;

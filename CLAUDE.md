@@ -40,9 +40,9 @@ it exists to prevent.
 
 One foreground and one background, `0xRRGGBB` in `state.h` (packed rather than
 `CRGB` so `state.h` stays free of FastLED). Used by clock, ticker and the
-wolfram CA. Plasma and the test patterns keep their own — plasma is a colour
-field with no foreground in it, and the test pattern's red pixel 0 is how you
-find the start of the chain.
+wolfram CA. Plasma, weather and the test patterns keep their own — plasma is a
+colour field with no foreground in it, weather is coloured by temperature, and
+the test pattern's red pixel 0 is how you find the start of the chain.
 
 Persisted to NVS, but **never write NVS on every update**: the colour picker
 sends one per mouse move and flash has finite erase cycles. `prefsUpdate()`

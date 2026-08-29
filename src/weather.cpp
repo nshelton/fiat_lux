@@ -27,10 +27,16 @@ void weatherUpdate(uint32_t now, bool net_up) {
   JsonDocument filter;
   filter["current"]["temperature_2m"] = true;
   filter["current"]["relative_humidity_2m"] = true;
+  filter["hourly"]["temperature_2m"] = true;
   JsonDocument doc;
   if (deserializeJson(doc, http, DeserializationOption::Filter(filter)) == DeserializationError::Ok) {
     g_weather_temp = lroundf(doc["current"]["temperature_2m"].as<float>());
     g_weather_humidity = doc["current"]["relative_humidity_2m"].as<int>();
+    JsonArray hourly = doc["hourly"]["temperature_2m"];
+    if (hourly.size() == 24) {
+      for (int i = 0; i < 24; i++) g_weather_hourly[i] = lroundf(hourly[i].as<float>());
+      g_weather_hourly_ok = true;
+    }
     Serial.print("weather: ");
     Serial.print(g_weather_temp);
     Serial.print("F ");
