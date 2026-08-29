@@ -34,7 +34,7 @@ input{width:100%;accent-color:#e8e6e3}
 <label><span>background</span><input type=color id=cbg></label></div>
 <div id=faders></div></main>
 <script>
-const M=['clock','wolfram','plasma','test','ticker','weather'],
+const M=['clock','wolfram','plasma','test','ticker','weather','humidity'],
 F=['brightness','fader'];
 let s={mode:0,v:[200,128],fg:'ffffff',bg:'000000',t:[-1,-1,-1,-1],heap:0},dirty=false,busy=false;
 cfg.oninput=()=>{s.fg=cfg.value.slice(1);dirty=true};

@@ -28,6 +28,7 @@ void weatherUpdate(uint32_t now, bool net_up) {
   filter["current"]["temperature_2m"] = true;
   filter["current"]["relative_humidity_2m"] = true;
   filter["hourly"]["temperature_2m"] = true;
+  filter["hourly"]["relative_humidity_2m"] = true;
   filter["daily"]["sunrise"] = true;
   filter["daily"]["sunset"] = true;
   JsonDocument doc;
@@ -35,8 +36,12 @@ void weatherUpdate(uint32_t now, bool net_up) {
     g_weather_temp = lroundf(doc["current"]["temperature_2m"].as<float>());
     g_weather_humidity = doc["current"]["relative_humidity_2m"].as<int>();
     JsonArray hourly = doc["hourly"]["temperature_2m"];
-    if (hourly.size() == 24) {
-      for (int i = 0; i < 24; i++) g_weather_hourly[i] = lroundf(hourly[i].as<float>());
+    JsonArray hum = doc["hourly"]["relative_humidity_2m"];
+    if (hourly.size() == 24 && hum.size() == 24) {
+      for (int i = 0; i < 24; i++) {
+        g_weather_hourly[i] = lroundf(hourly[i].as<float>());
+        g_humidity_hourly[i] = hum[i].as<int>();
+      }
       g_weather_hourly_ok = true;
     }
     // local iso8601, "2026-08-29T06:25" -- hour at 11, minute at 14

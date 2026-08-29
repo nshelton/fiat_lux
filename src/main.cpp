@@ -11,7 +11,8 @@
 #include "sensor.h"
 #include "prefs.h"
 
-static Animation* const anims[] = {anim_clock, anim_ca, anim_plasma, anim_test, anim_scroll, anim_weather};
+static Animation* const anims[] = {anim_clock,  anim_ca,      anim_plasma, anim_test,
+                                   anim_scroll, anim_weather, anim_humidity};
 static const uint8_t NUM_ANIMS = sizeof(anims) / sizeof(anims[0]);
 
 void setup() {

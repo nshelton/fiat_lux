@@ -95,7 +95,7 @@ still for `PREFS_SETTLE_MS` — drag freely, one write lands when you settle, an
 the first frame after a reboot is already the right colour.
 
 Modes: `0` clock, `1` wolfram CA, `2` plasma, `3` test patterns, `4` ticker,
-`5` weather.
+`5` weather, `6` humidity.
 
 ```
 curl "http://fiatlux.local/set?mode=4&bri=120"
@@ -115,6 +115,9 @@ white in the day, fading across the two columns either side of sunrise and
 sunset. The curve is coloured by temperature — 50F blue, 60 green, 70 yellow,
 80 orange, 90 red, darkening past 100 — blended between anchors, so the day
 sweeps through the scale. Shows `--` until the first fetch lands.
+
+Humidity (mode 6) is the same graph for relative humidity, coloured dry amber
+through green and teal to blue at saturation.
 
 ## streaming (UDP, port 8001)
 
