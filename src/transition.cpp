@@ -90,29 +90,25 @@ static void sagPixel(CRGB& c, uint8_t rs, uint8_t gs, uint8_t bs) {
   c.b = scale8(c.b, bs);
 }
 
-// display-aligned violence: each 16x16 physical panel occasionally loses its
-// mind for a single frame. One roll in ten is pure noise, one is a solid
-// primary, the rest bit-mash whatever is already there.
+// display-aligned violence: an 8x4 grid of 4x4 cells, each with a small
+// chance per frame of losing its mind. One roll in ten is pure noise, one is
+// a solid primary, the rest bit-mash whatever is already there.
 static void chunkGlitch() {
-  const int PANEL_LEDS = PANEL_WIDTH * HEIGHT;
-  for (int panel = 0; panel < WIDTH / PANEL_WIDTH; panel++) {
-    if (random8() >= 70) continue;
-    int x0 = panel * PANEL_WIDTH;
-    uint8_t roll = random8(10);
-    if (roll == 0) {
-      for (int i = panel * PANEL_LEDS; i < (panel + 1) * PANEL_LEDS; i++)
-        leds[i] = CRGB(random8(), random8(), random8());
-    } else if (roll == 1) {
-      CRGB c(0, 0, 0);
-      c.raw[random8(3)] = 255;
-      fill_solid(&leds[panel * PANEL_LEDS], PANEL_LEDS, c);
-    } else {
+  const int CELL = 4;
+  for (int cy = 0; cy < HEIGHT; cy += CELL)
+    for (int cx = 0; cx < WIDTH; cx += CELL) {
+      if (random8() >= 16) continue;
+      uint8_t roll = random8(10);
       uint8_t mash = random8(5);
       uint8_t bits = 0x20 << random8(3);
-      for (int y = 0; y < HEIGHT; y++)
-        for (int x = x0; x < x0 + PANEL_WIDTH; x++) {
+      CRGB solid(0, 0, 0);
+      solid.raw[random8(3)] = 255;
+      for (int y = cy; y < cy + CELL; y++)
+        for (int x = cx; x < cx + CELL; x++) {
           CRGB c = getPixel(x, y);
-          switch (mash) {
+          if (roll == 0) c = CRGB(random8(), random8(), random8());
+          else if (roll == 1) c = solid;
+          else switch (mash) {
             case 0: c = CRGB(c.g, c.b, c.r); break;             // channel rotate
             case 1: c.raw[random8(3)] ^= bits; break;           // flip a high bit
             case 2:                                             // xor moire
@@ -125,7 +121,6 @@ static void chunkGlitch() {
           setPixel(x, y, c);
         }
     }
-  }
 }
 
 // a corrupt bit shifts everything downstream of it, and leds[] is chain
