@@ -12,8 +12,9 @@
 #include "sensor.h"
 #include "prefs.h"
 
-static Animation* const anims[] = {anim_clock,  anim_ca,      anim_plasma, anim_test,
-                                   anim_scroll, anim_weather, anim_humidity};
+static Animation* const anims[] = {anim_clock,  anim_ca,      anim_plasma,   anim_test,
+                                   anim_scroll, anim_weather, anim_humidity, anim_aqi,
+                                   anim_worldmap};
 static const uint8_t NUM_ANIMS = sizeof(anims) / sizeof(anims[0]);
 
 void setup() {
@@ -35,6 +36,7 @@ void loop() {
   httpUpdate(net_up);
   timeSyncUpdate(now, net_up);
   weatherUpdate(now, net_up);
+  aqiUpdate(now, net_up);
   sensorUpdate(now);
   prefsUpdate(now);
 
@@ -56,15 +58,8 @@ void loop() {
 
   uint8_t mode = g_mode < NUM_ANIMS ? g_mode : 0;
   if (mode != active) {
-    // glitch-wipe the old frame out before the new mode draws in
-    if (active != 255) {
-      if (!transitionActive()) transitionStart();
-      if (transitionFrame()) {
-        FastLED.setBrightness(g_brightness);
-        FastLED.show();
-        return;
-      }
-    }
+    // crossfade: snapshot what is showing, the new mode starts at once
+    if (active != 255) transitionStart();
     active = mode;
     anims[active]->begin();
   }

@@ -5,8 +5,8 @@
 
 // today's hourly forecast as an xy plot: local midnight to midnight across the
 // 32 columns, the day's lo-hi range across the 16 rows. Weather draws the
-// temperature, humidity the relative humidity — same graph, different colour
-// ramp. Hi over lo in the top-left, the current reading top-right, each in its
+// temperature, humidity the relative humidity, aqi the US AQI — same graph,
+// different colour ramp. Hi over lo in the top-left, the current reading top-right, each in its
 // own value's colour, and a full-height grey column with a white pixel on the
 // curve marks now. The sky above
 // the line is dark at night and light in the day, blended across the two
@@ -46,10 +46,24 @@ static CRGB humColor(float h) {
   return rampLerp(RAMP, 6, h / 20.0f);
 }
 
-static void drawGraph(const int* hourly, int current, CRGB (*color)(float)) {
+// anchors at the US AQI band edges, every 50
+static CRGB aqiColor(float a) {
+  static const CRGB RAMP[] = {
+      CRGB(0, 200, 0),     // 0 green
+      CRGB(230, 210, 0),   // 50 yellow
+      CRGB(255, 110, 0),   // 100 orange
+      CRGB(255, 0, 0),     // 150 red
+      CRGB(160, 0, 190),   // 200 purple
+      CRGB(140, 0, 100),   // 250
+      CRGB(126, 0, 35),    // 300 maroon
+  };
+  return rampLerp(RAMP, 7, a / 50.0f);
+}
+
+static void drawGraph(const int* hourly, int current, CRGB (*color)(float), bool ok) {
   clear();
 
-  if (!g_weather_hourly_ok) {
+  if (!ok) {
     writeString("--", 2, 13, 6, CRGB(90, 90, 90));
     return;
   }
@@ -111,14 +125,20 @@ static void drawGraph(const int* hourly, int current, CRGB (*color)(float)) {
 }
 
 struct WeatherAnim : Animation {
-  void frame(uint32_t) override { drawGraph(g_weather_hourly, g_weather_temp, tempColor); }
+  void frame(uint32_t) override { drawGraph(g_weather_hourly, g_weather_temp, tempColor, g_weather_hourly_ok); }
 };
 
 struct HumidityAnim : Animation {
-  void frame(uint32_t) override { drawGraph(g_humidity_hourly, g_weather_humidity, humColor); }
+  void frame(uint32_t) override { drawGraph(g_humidity_hourly, g_weather_humidity, humColor, g_weather_hourly_ok); }
+};
+
+struct AqiAnim : Animation {
+  void frame(uint32_t) override { drawGraph(g_aqi_hourly, g_aqi, aqiColor, g_aqi_hourly_ok); }
 };
 
 static WeatherAnim s_anim;
 Animation* const anim_weather = &s_anim;
 static HumidityAnim s_hum;
 Animation* const anim_humidity = &s_hum;
+static AqiAnim s_aqi;
+Animation* const anim_aqi = &s_aqi;

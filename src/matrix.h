@@ -5,6 +5,7 @@
 extern CRGB leds[NUM_LEDS];
 
 void matrixSetup();
+uint32_t matrixPowerMa();  // modelled LED draw, not a measurement
 void setPixel(int x, int y, CRGB col);
 CRGB getPixel(int x, int y);
 void setRaster(int idx, CRGB col);  // raster index from a stream sender, y flipped

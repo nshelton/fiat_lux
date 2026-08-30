@@ -59,3 +59,41 @@ void weatherUpdate(uint32_t now, bool net_up) {
   }
   http.stop();
 }
+
+void aqiUpdate(uint32_t now, bool net_up) {
+  if (!net_up) return;
+
+  // the first fetch waits out the weather one so the loop only stalls for one
+  // request at a time; the 30s offset keeps them apart every cycle after
+  static uint32_t last = 0;
+  if (last == 0 && now < 30000) return;
+  if (last != 0 && now - last < WEATHER_MS) return;
+  last = now;
+
+  WiFiClient sock;
+  HttpClient http(sock, "air-quality-api.open-meteo.com", 80);
+  http.setHttpResponseTimeout(5000);
+
+  if (http.get(aqi_api_path) != 0 || http.responseStatusCode() != 200) {
+    Serial.println("aqi request failed");
+    http.stop();
+    return;
+  }
+  http.skipResponseHeaders();
+
+  JsonDocument filter;
+  filter["current"]["us_aqi"] = true;
+  filter["hourly"]["us_aqi"] = true;
+  JsonDocument doc;
+  if (deserializeJson(doc, http, DeserializationOption::Filter(filter)) == DeserializationError::Ok) {
+    g_aqi = doc["current"]["us_aqi"].as<int>();
+    JsonArray hourly = doc["hourly"]["us_aqi"];
+    if (hourly.size() == 24) {
+      for (int i = 0; i < 24; i++) g_aqi_hourly[i] = hourly[i].as<int>();
+      g_aqi_hourly_ok = true;
+    }
+    Serial.print("aqi: ");
+    Serial.println(g_aqi);
+  }
+  http.stop();
+}

@@ -13,3 +13,5 @@ extern Animation* const anim_test;
 extern Animation* const anim_scroll;
 extern Animation* const anim_weather;
 extern Animation* const anim_humidity;
+extern Animation* const anim_aqi;
+extern Animation* const anim_worldmap;

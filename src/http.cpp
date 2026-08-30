@@ -34,9 +34,9 @@ input{width:100%;accent-color:#e8e6e3}
 <label><span>background</span><input type=color id=cbg></label></div>
 <div id=faders></div></main>
 <script>
-const M=['clock','wolfram','plasma','test','ticker','weather','humidity'],
+const M=['clock','wolfram','plasma','test','ticker','weather','humidity','aqi','map'],
 F=['brightness','fader'];
-let s={mode:0,v:[200,128],fg:'ffffff',bg:'000000',t:[-1,-1,-1,-1],heap:0},dirty=false,busy=false;
+let s={mode:0,v:[200,128],fg:'ffffff',bg:'000000',t:[-1,-1,-1,-1],heap:0,ma:-1,aqi:-1},dirty=false,busy=false;
 cfg.oninput=()=>{s.fg=cfg.value.slice(1);dirty=true};
 cbg.oninput=()=>{s.bg=cbg.value.slice(1);dirty=true};
 M.forEach((n,i)=>{let b=document.createElement('button');b.textContent=n;
@@ -54,9 +54,11 @@ busy=false},120);
 function drawState(j){let f=v=>v<0?'--':v,t=j.t;
 env.innerHTML='<span>out</span><b>'+f(t[0])+'&deg;F</b><b>'+f(t[1])+'%</b>'+
 '<span>in</span><b>'+f(t[2])+'&deg;F</b><b>'+f(t[3])+'%</b>'+
+'<span>aqi</span><b>'+f(j.aqi)+'</b><b></b>'+
 '<span>mode</span><b>'+M[j.mode]+'</b><b></b>'+
 '<span>bri/fader</span><b>'+j.v[0]+'</b><b>'+j.v[1]+'</b>'+
 '<span>fg/bg</span><b>#'+j.fg+'</b><b>#'+j.bg+'</b>'+
+'<span>power</span><b>'+(j.ma<0?'--':j.ma+'mA')+'</b><b>'+(j.ma<0?'':(j.ma*5/1000).toFixed(1)+'W')+'</b>'+
 '<span>heap</span><b>'+(j.heap?(j.heap/1024).toFixed(1)+'k':'--')+'</b><b></b>'}
 drawState(s);
 fetch('/state').then(r=>r.json()).then(j=>{s=j;draw();drawState(j)});draw();
@@ -78,11 +80,11 @@ static void sendState(WiFiClient& c) {
   char body[160];
   int n = snprintf(body, sizeof(body),
                    "{\"mode\":%u,\"v\":[%u,%u],\"fg\":\"%06lx\",\"bg\":\"%06lx\","
-                   "\"t\":[%d,%d,%d,%d],\"heap\":%u}",
+                   "\"t\":[%d,%d,%d,%d],\"heap\":%u,\"ma\":%lu,\"aqi\":%d}",
                    g_mode, g_brightness, g_fader,
                    (unsigned long)g_fg, (unsigned long)g_bg,
                    g_weather_temp, g_weather_humidity, g_sensor_temp, g_sensor_humidity,
-                   (unsigned)ESP.getFreeHeap());
+                   (unsigned)ESP.getFreeHeap(), (unsigned long)matrixPowerMa(), g_aqi);
   sendBody(c, "application/json", body, n);
 }
 

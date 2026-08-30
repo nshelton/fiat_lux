@@ -8,6 +8,14 @@ void matrixSetup() {
   FastLED.setMaxPowerInVoltsAndMilliamps(5, MAX_POWER_MA);
 }
 
+// FastLED's own power model -- the same math the MAX_POWER_MA limiter
+// throttles against, so the clamp here mirrors what show() actually does
+uint32_t matrixPowerMa() {
+  uint32_t mw = calculate_unscaled_power_mW(leds, NUM_LEDS) * FastLED.getBrightness() / 256;
+  uint32_t ma = mw / 5;
+  return ma > MAX_POWER_MA ? MAX_POWER_MA : ma;
+}
+
 // serpentine within each 16-wide panel, odd rows reversed, panel 2 offset +256
 static int XY(int x, int y) {
   int panel = x / PANEL_WIDTH;
@@ -47,10 +55,14 @@ void putChar(uint8_t c, int x, int y, uint8_t scale, CRGB col) {
         bits >>= 1;
       }
   } else {
+    // 5x7 glyphs drawn double-height: the clock face fills the panel with them
     uint64_t bits = glyph5x7(c);
     for (int dy = 0; dy < 7; dy++)
       for (int dx = 5; dx >= 1; dx--) {
-        if (bits & 1) setPixel(x + dx, y + dy, col);
+        if (bits & 1) {
+          setPixel(x + dx, y + 2 * dy, col);
+          setPixel(x + dx, y + 2 * dy + 1, col);
+        }
         bits >>= 1;
       }
   }

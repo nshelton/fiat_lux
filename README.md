@@ -63,9 +63,12 @@ before their first successful read.
 
 Two endpoints back the page, and both are just as usable from curl:
 
-- `GET /state` → `{"mode":N,"v":[bri,f1],"fg":"rrggbb","bg":"rrggbb","t":[...],"heap":N}`
+- `GET /state` → `{"mode":N,"v":[bri,f1],"fg":"rrggbb","bg":"rrggbb","t":[...],"heap":N,"ma":N,"aqi":N}`
   (`heap` is the free heap in bytes, read live — a number drifting down over
-  days is a leak)
+  days is a leak. `ma` is the current frame's LED draw from FastLED's power
+  model — the same math the `MAX_POWER_MA` limiter throttles against, so it
+  clamps at 3500. A model, not a measurement. `aqi` is the current outdoor US
+  AQI, `-1` before the first fetch.)
 - `GET /set?mode=N&bri=N&f1=N&fg=rrggbb&bg=rrggbb` → the same JSON. Every param
   is optional, the numeric ones clamp to 0-255, so you can send just the one you
   care about.
@@ -95,7 +98,7 @@ still for `PREFS_SETTLE_MS` — drag freely, one write lands when you settle, an
 the first frame after a reboot is already the right colour.
 
 Modes: `0` clock, `1` wolfram CA, `2` plasma, `3` test patterns, `4` ticker,
-`5` weather, `6` humidity.
+`5` weather, `6` humidity, `7` aqi, `8` world map.
 
 ```
 curl "http://fiatlux.local/set?mode=4&bri=120"
@@ -119,6 +122,22 @@ sweeps through the scale. Shows `--` until the first fetch lands.
 
 Humidity (mode 6) is the same graph for relative humidity, coloured dry amber
 through green and teal to blue at saturation.
+
+AQI (mode 7) is the same graph again for the US AQI, coloured by the standard
+bands — green at 0 through yellow 50, orange 100, red 150, purple 200, maroon
+300. It comes from open-meteo's air-quality host
+(`air-quality-api.open-meteo.com`, same no-key deal, path with lat/lon in
+`secrets.h`) on the weather cadence, offset 30s so the loop never stalls for
+two fetches at once. Modelled from CAMS satellite data, not a station reading —
+citywide, so it can miss the neighbour's barbecue.
+
+The world map (mode 8) is the equirectangular earth at 11.25° per pixel — green
+land, blue ocean — with the night side dimmed along the real solar terminator
+and a yellow dot at the point where the sun is overhead. It is computed from
+UTC alone (declination from the day of year, subsolar longitude from the time),
+so it needs no fetch and is never stale; the terminator crawls across at one
+column per 45 minutes, and the lit fraction of each pole tracks the seasons.
+Until NTP syncs the whole map shows daylit.
 
 ## streaming (UDP, port 8001)
 
