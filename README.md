@@ -52,7 +52,7 @@ Other envs:
 
 Open `http://fiatlux.local/` — the device serves its own control page with the
 outdoor and indoor readings across the top, mode buttons, colour pickers, and
-the brightness and fader sliders.
+the brightness slider.
 
 The readings live on the page rather than the panel: four numbers squeezed onto
 one 32px row were never legible, and the clock has the space to itself now. The
@@ -63,19 +63,19 @@ before their first successful read.
 
 Two endpoints back the page, and both are just as usable from curl:
 
-- `GET /state` → `{"mode":N,"v":[bri,f1],"fg":"rrggbb","bg":"rrggbb","t":[...],"heap":N,"ma":N,"aqi":N}`
+- `GET /state` → `{"mode":N,"v":[bri],"fg":"rrggbb","bg":"rrggbb","t":[...],"heap":N,"ma":N,"aqi":N}`
   (`heap` is the free heap in bytes, read live — a number drifting down over
   days is a leak. `ma` is the current frame's LED draw from FastLED's power
   model — the same math the `MAX_POWER_MA` limiter throttles against, so it
   clamps at 3500. A model, not a measurement. `aqi` is the current outdoor US
   AQI, `-1` before the first fetch.)
-- `GET /set?mode=N&bri=N&f1=N&fg=rrggbb&bg=rrggbb` → the same JSON. Every param
+- `GET /set?mode=N&bri=N&fg=rrggbb&bg=rrggbb` → the same JSON. Every param
   is optional, the numeric ones clamp to 0-255, so you can send just the one you
   care about.
 
-`f1` is the only fader. It means something different per mode: in mode 3 it
-picks the test pattern, in mode 4 it sets the ticker speed. There used to be an
-`f2`-`f4` alongside it as free params for animations; nothing ever read them.
+`bri` is the only slider left. There used to be faders `f1`-`f4` as free
+params for animations; the ticker was the last thing reading one, and it went
+with the ticker.
 
 Colours are six hex digits with no `#` — a `#` in a URL starts a fragment and
 never reaches the device. A value that is not exactly six hex digits is ignored
@@ -85,11 +85,9 @@ rather than half-parsed.
 curl "http://fiatlux.local/set?fg=ff8800&bg=001020"
 ```
 
-The two pickers set one foreground and one background, used by the clock, the
-ticker and the wolfram CA (live cells are `fg`, the rest `bg`). Plasma, the
-weather plot and the test patterns keep their own colours: plasma *is* a colour
-field with no foreground in it, weather is coloured by temperature, and the
-test pattern's red pixel 0 is how you find the start of the chain.
+The two pickers set one foreground and one background, used by the clock and
+the wolfram CA (live cells are `fg`, the rest `bg`). The graph modes keep
+their own colours — their curves are coloured by the data.
 
 They persist to NVS. The picker streams a new colour on every mouse move and NVS
 has finite erase cycles, so `prefsUpdate()` only writes once a colour has held
@@ -97,20 +95,15 @@ still for `PREFS_SETTLE_MS` — drag freely, one write lands when you settle, an
 `colors saved` appears on serial. `prefsLoad()` runs before `matrixSetup()`, so
 the first frame after a reboot is already the right colour.
 
-Modes: `0` clock, `1` wolfram CA, `2` plasma, `3` test patterns, `4` ticker,
-`5` weather, `6` humidity, `7` aqi, `8` world map.
+Modes: `0` clock, `1` wolfram CA, `2` weather, `3` humidity, `4` aqi,
+`5` world map, `6` astro. The test patterns live in the `panel` env now;
+plasma and the ticker are gone.
 
 ```
-curl "http://fiatlux.local/set?mode=4&bri=120"
+curl "http://fiatlux.local/set?mode=2&bri=120"
 ```
 
-Test patterns (mode 3): the fader picks index chase / column sweep / row sweep /
-solid white ramp for verifying panel wiring and the power cap.
-
-The ticker (mode 4) scrolls time, date and both temp/humidity pairs; the fader
-sets the speed. It rebuilds the string each wrap so it stays current.
-
-Weather (mode 5) plots today's hourly forecast from open-meteo as an xy graph:
+Weather (mode 2) plots today's hourly forecast from open-meteo as an xy graph:
 local midnight to midnight across the 32 columns, the day's lo-hi range across
 the 16 rows, with the hi stacked over the lo in the top-left, the current
 reading top-right, and a full-height grey column marking now — white where it
@@ -120,10 +113,10 @@ sunset. The curve is coloured by temperature — 50F blue, 60 green, 70 yellow,
 80 orange, 90 red, darkening past 100 — blended between anchors, so the day
 sweeps through the scale. Shows `--` until the first fetch lands.
 
-Humidity (mode 6) is the same graph for relative humidity, coloured dry amber
+Humidity (mode 3) is the same graph for relative humidity, coloured dry amber
 through green and teal to blue at saturation.
 
-AQI (mode 7) is the same graph again for the US AQI, coloured by the standard
+AQI (mode 4) is the same graph again for the US AQI, coloured by the standard
 bands — green at 0 through yellow 50, orange 100, red 150, purple 200, maroon
 300. It comes from open-meteo's air-quality host
 (`air-quality-api.open-meteo.com`, same no-key deal, path with lat/lon in
@@ -131,13 +124,28 @@ bands — green at 0 through yellow 50, orange 100, red 150, purple 200, maroon
 two fetches at once. Modelled from CAMS satellite data, not a station reading —
 citywide, so it can miss the neighbour's barbecue.
 
-The world map (mode 8) is the equirectangular earth at 11.25° per pixel — green
+The world map (mode 5) is the equirectangular earth at 11.25° per pixel — green
 land, blue ocean — with the night side dimmed along the real solar terminator
 and a yellow dot at the point where the sun is overhead. It is computed from
 UTC alone (declination from the day of year, subsolar longitude from the time),
 so it needs no fetch and is never stale; the terminator crawls across at one
 column per 45 minutes, and the lit fraction of each pole tracks the seasons.
-Until NTP syncs the whole map shows daylit.
+A grey dot marks the point where the moon is overhead, from a truncated lunar
+theory good to a degree or two — half a pixel is 5.6°. It is drawn after the
+sun, so during a solar eclipse the moon covers it. Until NTP syncs the whole
+map shows daylit with neither dot.
+
+Astro (mode 6) is the sky in the tropical zodiac. Top band: the sun as its
+sign's 6x7 glyph in gold, the moon's sign in silver, the moon disc drawn with
+its real phase shape, and the illuminated % over a small triangle — tip up
+waxing, tip down waning. Bottom band: the zodiac scrolling on a ~14s loop,
+each sign trailed by the planets currently in it (mercury through saturn),
+sign and planet sharing the planet's colour, with a red R behind a
+retrograde planet (today's vs tomorrow's geocentric longitude); empty signs
+stay grey. Sun and moon use the same truncated ephemerides as the map, the
+planets Kepler orbits from mean elements (`astro.cpp`) — a sign is 30° wide,
+so a degree or two of error never mislabels anything for long. Shows `--`
+until NTP syncs.
 
 ## streaming (UDP, port 8001)
 

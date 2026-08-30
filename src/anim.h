@@ -8,10 +8,9 @@ struct Animation {
 
 extern Animation* const anim_clock;
 extern Animation* const anim_ca;
-extern Animation* const anim_plasma;
-extern Animation* const anim_test;
-extern Animation* const anim_scroll;
+extern Animation* const anim_test;  // panel env only
 extern Animation* const anim_weather;
 extern Animation* const anim_humidity;
 extern Animation* const anim_aqi;
 extern Animation* const anim_worldmap;
+extern Animation* const anim_astro;

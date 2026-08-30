@@ -1,6 +1,7 @@
 #include <math.h>
 #include <time.h>
 #include "anim.h"
+#include "astro.h"
 #include "matrix.h"
 
 // world map with live day/night shading. One cell is 11.25 degrees of the
@@ -67,6 +68,22 @@ struct WorldMapAnim : Animation {
       int sc = (int)((180.0f - 15.0f * h + 180.0f) / 11.25f) & (WIDTH - 1);
       int sr = (int)((90.0f - decl_deg) / 11.25f);
       setPixel(sc, HEIGHT - 1 - sr, CRGB(255, 200, 0));
+
+      // sublunar point: ecliptic position from astro.cpp, then equatorial
+      // and minus sidereal time. Drawn after the sun so an eclipse does what
+      // an eclipse does.
+      double days = astroDays(t);
+      float mlon_deg, mlat_deg;
+      moonEcliptic(days, &mlon_deg, &mlat_deg);
+      float lam = mlon_deg * DEG, bet = mlat_deg * DEG;
+      const float OBL = 23.439f * DEG;  // obliquity of the ecliptic
+      float mdec = asinf(sinf(bet) * cosf(OBL) + cosf(bet) * sinf(OBL) * sinf(lam));
+      float mra = atan2f(sinf(lam) * cosf(OBL) - tanf(bet) * sinf(OBL), cosf(lam));
+      float gmst = fmod(280.147 + 360.9856235 * days, 360.0) * DEG;
+      float mlon = fmodf((mra - gmst) / DEG + 540.0f + 720.0f, 360.0f) - 180.0f;
+      int mc = (int)((mlon + 180.0f) / 11.25f) & (WIDTH - 1);
+      int mr = (int)((90.0f - mdec / DEG) / 11.25f);
+      setPixel(mc, HEIGHT - 1 - mr, CRGB(110, 110, 130));
     }
   }
 };
